@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
+import AppHeader from '../components/AppHeader';
 import AdminSidebar from '../components/AdminSidebar';
 import { Notification } from '../components/Notification';
 import { capitalizeName } from '../utils/formatUtils';
@@ -109,19 +110,20 @@ export default function AdminDashboard() {
   return (
     <div className="bg-[#f6f6f8] dark:bg-[#121620] font-['Lexend'] text-slate-900 dark:text-slate-100 min-h-screen">
       {notification && <Notification message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
+      <AppHeader role="admin" />
       <div className="flex min-h-screen">
         <AdminSidebar />
-        <main className="flex-1 md:ml-64 p-8">
+        <main className="flex-1 md:ml-64 p-4 md:p-8">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-3xl font-black tracking-tight flex items-center gap-2"><LayoutDashboard className="text-[#1e3b8a]" size={32} /> Panel de Control</h2>
-            <Button color="primary" className="bg-[#1e3b8a]" startContent={<Printer size={18} />} isLoading={isExporting} onPress={handleMonthlyReport}>Reporte Mensual</Button>
+            <Button color="primary" className="bg-[#1e3b8a]" startContent={<Printer size={18} />} isLoading={isExporting} onPress={handleMonthlyReport}>Reporte</Button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
             {[
-              { label: 'Total Deméritos', value: stats.demerits, icon: <ShieldAlert className="text-red-600" />, bg: 'bg-red-100', color: 'text-red-600' },
-              { label: 'Total Redenciones', value: stats.redemptions, icon: <BadgeCheck className="text-blue-600" />, bg: 'bg-blue-100', color: 'text-blue-600' },
-              { label: 'Alumnos Activos', value: stats.active, icon: <Users className="text-emerald-600" />, bg: 'bg-emerald-100', color: 'text-emerald-600' }
+              { label: 'Deméritos', value: stats.demerits, icon: <ShieldAlert className="text-red-600" />, bg: 'bg-red-100', color: 'text-red-600' },
+              { label: 'Redenciones', value: stats.redemptions, icon: <BadgeCheck className="text-blue-600" />, bg: 'bg-blue-100', color: 'text-blue-600' },
+              { label: 'Alumnos', value: stats.active, icon: <Users className="text-emerald-600" />, bg: 'bg-emerald-100', color: 'text-emerald-600' }
             ].map((metric, idx) => (
               <Card key={idx} className="border-none shadow-sm overflow-hidden">
                 <CardBody className="p-6">

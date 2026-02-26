@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Notification } from '../components/Notification';
+import AppHeader from '../components/AppHeader';
 import AdminSidebar from '../components/AdminSidebar';
 import { 
   Card, Button, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, 
@@ -51,11 +52,6 @@ export default function ManageGroups() {
     }
   };
 
-  const handleDeleteClick = (grupo: any) => {
-    setSelectedGrupo(grupo);
-    onDeleteOpen();
-  };
-
   const confirmDeleteGrupo = async (onClose: () => void) => {
     setIsSubmitting(true);
     try {
@@ -74,15 +70,16 @@ export default function ManageGroups() {
   return (
     <div className="bg-[#f6f6f8] dark:bg-[#121620] font-['Lexend'] text-slate-900 dark:text-slate-100 min-h-screen">
       {notification && <Notification message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
+      <AppHeader role="admin" />
       <div className="flex min-h-screen">
         <AdminSidebar />
-        <main className="flex-1 md:ml-64 p-8">
+        <main className="flex-1 md:ml-64 p-4 md:p-8">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-3xl font-black tracking-tight">Gestión de Grupos</h2>
-            <Button color="primary" className="bg-[#1e3b8a]" startContent={<Plus size={18} />} onPress={onOpen}>Nuevo Grupo</Button>
+            <Button color="primary" className="bg-[#1e3b8a]" startContent={<Plus size={18} />} onPress={onOpen}>Nuevo</Button>
           </div>
 
-          <Card className="border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+          <Card className="border-slate-200 shadow-sm overflow-hidden">
             <Table aria-label="Grupos Table">
               <TableHeader>
                 <TableColumn>NOMBRE DEL GRUPO</TableColumn>
@@ -94,7 +91,7 @@ export default function ManageGroups() {
                     <TableCell className="font-bold">{g.nombre}</TableCell>
                     <TableCell>
                       <div className="flex justify-end">
-                        <Button isIconOnly variant="light" size="sm" color="danger" onPress={() => handleDeleteClick(g)}><Trash2 size={18} /></Button>
+                        <Button isIconOnly variant="light" size="sm" color="danger" onPress={() => { setSelectedGrupo(g); onDeleteOpen(); }}><Trash2 size={18} /></Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -105,7 +102,7 @@ export default function ManageGroups() {
         </main>
       </div>
 
-      <Modal isOpen={isOpen} onOpenChange={onOpenChange} placement="center">
+      <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
         <ModalContent>
           {(onClose) => (
             <>
@@ -124,10 +121,10 @@ export default function ManageGroups() {
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="text-red-600">⚠️ Confirmar Eliminación</ModalHeader>
-              <ModalBody>¿Estás seguro de eliminar el grupo <strong>{selectedGrupo?.nombre}</strong>?</ModalBody>
+              <ModalHeader className="text-red-600 font-black">⚠️ ELIMINAR</ModalHeader>
+              <ModalBody>¿Borrar el grupo <strong>{selectedGrupo?.nombre}</strong>?</ModalBody>
               <ModalFooter>
-                <Button variant="light" onPress={onClose}>Cancelar</Button>
+                <Button variant="light" onPress={onClose}>No</Button>
                 <Button color="danger" variant="flat" isLoading={isSubmitting} onPress={() => confirmDeleteGrupo(onClose)}>Eliminar</Button>
               </ModalFooter>
             </>

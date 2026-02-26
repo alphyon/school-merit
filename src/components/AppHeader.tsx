@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { 
   Navbar, NavbarBrand, NavbarContent, NavbarItem, Link, Avatar, Dropdown, 
-  DropdownTrigger, DropdownMenu, DropdownItem, NavbarMenuToggle, NavbarMenu, NavbarMenuItem, Button 
+  DropdownTrigger, DropdownMenu, DropdownItem, NavbarMenuToggle, NavbarMenu, NavbarMenuItem, Button, useDisclosure 
 } from "@heroui/react";
-import { GraduationCap, LogOut, Lock as LockIcon, BarChart, Users } from 'lucide-react';
+import { GraduationCap, LogOut, Lock as LockIcon, BarChart, Users, Shield, Layers, Settings, Home } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import ChangePasswordModal from './ChangePasswordModal';
@@ -38,42 +38,54 @@ export default function AppHeader({ role }: { role: string }) {
 
   return (
     <Navbar 
-      className="bg-[#1e3b8a] text-white shadow-md py-1" 
+      className="bg-[#1e3b8a] text-white shadow-md" 
       maxWidth="xl" 
       isMenuOpen={isMenuOpen} 
       onMenuOpenChange={setIsMenuOpen}
+      classNames={{
+        wrapper: "px-4 sm:px-6",
+        toggle: "text-white",
+        toggleIcon: "text-white"
+      }}
     >
-      <NavbarContent className="sm:hidden" justify="start">
-        <NavbarMenuToggle aria-label={isMenuOpen ? "Cerrar menú" : "Abrir menú"} className="text-white" />
+      {/* Botón Hamburguesa - Ahora visible hasta el breakpoint MD */}
+      <NavbarContent className="md:hidden" justify="start">
+        <NavbarMenuToggle aria-label={isMenuOpen ? "Cerrar menú" : "Abrir menú"} />
       </NavbarContent>
 
-      <NavbarBrand className="flex items-center gap-3 cursor-pointer" onClick={() => navigate(isDocente ? '/teacher' : '/admin')}>
+      <NavbarBrand className="flex items-center gap-2 cursor-pointer" onClick={() => navigate(isDocente ? '/teacher' : '/admin')}>
         {settings.logo ? (
           <img src={settings.logo} className="h-8 w-auto object-contain" alt="Logo" />
         ) : (
           <GraduationCap className="text-2xl text-white" />
         )}
-        <div className="flex flex-col">
+        <div className="flex flex-col overflow-hidden">
           <p className="text-[8px] font-black tracking-widest uppercase opacity-70 leading-none">Gestión de Méritos</p>
-          <p className="text-[11px] font-bold uppercase truncate max-w-[150px] leading-tight">{settings.name}</p>
+          <p className="text-[10px] font-bold uppercase truncate max-w-[100px] sm:max-w-[200px] leading-tight">{settings.name}</p>
         </div>
       </NavbarBrand>
       
-      {/* Menú Desktop */}
-      <NavbarContent className="hidden sm:flex gap-8" justify="center">
-        {isDocente && (
+      {/* Menú Desktop - Visible desde MD en adelante */}
+      <NavbarContent className="hidden md:flex gap-6" justify="center">
+        {isDocente ? (
           <>
             <NavbarItem isActive={location.pathname === '/teacher'}>
-              <Link onPress={() => navigate('/teacher')} className={`text-[11px] font-black uppercase tracking-widest ${location.pathname === '/teacher' ? 'text-white border-b-2 border-white' : 'text-blue-200'}`}>
+              <Link onPress={() => navigate('/teacher')} className={`text-[11px] font-black uppercase tracking-widest ${location.pathname === '/teacher' ? 'text-white border-b-2 border-white' : 'text-blue-200 hover:text-white'}`}>
                 Alumnos
               </Link>
             </NavbarItem>
             <NavbarItem isActive={location.pathname === '/teacher/reportes'}>
-              <Link onPress={() => navigate('/teacher/reportes')} className={`text-[11px] font-black uppercase tracking-widest ${location.pathname === '/teacher/reportes' ? 'text-white border-b-2 border-white' : 'text-blue-200'}`}>
+              <Link onPress={() => navigate('/teacher/reportes')} className={`text-[11px] font-black uppercase tracking-widest ${location.pathname === '/teacher/reportes' ? 'text-white border-b-2 border-white' : 'text-blue-200 hover:text-white'}`}>
                 Reportes
               </Link>
             </NavbarItem>
           </>
+        ) : (
+          <NavbarItem>
+            <span className="text-[10px] font-black text-blue-200 uppercase tracking-[0.2em] bg-white/10 px-4 py-1 rounded-full border border-white/10">
+              Panel Administrativo Activo
+            </span>
+          </NavbarItem>
         )}
       </NavbarContent>
 
@@ -94,38 +106,28 @@ export default function AppHeader({ role }: { role: string }) {
         </Dropdown>
       </NavbarContent>
 
-      {/* Menú Móvil (Hamburguesa) */}
-      <NavbarMenu className="bg-[#1e3b8a] pt-10">
+      {/* Menú Móvil - Completo para ambos roles */}
+      <NavbarMenu className="bg-[#1e3b8a] pt-6 flex flex-col gap-2">
         {isDocente ? (
           <>
             <NavbarMenuItem>
-              <Link 
-                className={`w-full text-white text-xl font-black uppercase py-4 border-b border-white/10 flex gap-3`} 
-                onPress={() => { navigate('/teacher'); setIsMenuOpen(false); }}
-              >
-                <Users size={24} /> Mis Alumnos
-              </Link>
+              <Button variant="light" className="w-full justify-start text-white text-lg font-black uppercase h-16" startContent={<Users size={24} />} onPress={() => { navigate('/teacher'); setIsMenuOpen(false); }}>Mis Alumnos</Button>
             </NavbarMenuItem>
             <NavbarMenuItem>
-              <Link 
-                className={`w-full text-white text-xl font-black uppercase py-4 border-b border-white/10 flex gap-3`} 
-                onPress={() => { navigate('/teacher/reportes'); setIsMenuOpen(false); }}
-              >
-                <BarChart size={24} /> Reportes
-              </Link>
+              <Button variant="light" className="w-full justify-start text-white text-lg font-black uppercase h-16" startContent={<BarChart size={24} />} onPress={() => { navigate('/teacher/reportes'); setIsMenuOpen(false); }}>Reportes</Button>
             </NavbarMenuItem>
           </>
         ) : (
-          <NavbarMenuItem>
-            <Link className="w-full text-white text-xl font-black uppercase" onPress={() => { navigate('/admin'); setIsMenuOpen(false); }}>
-              Panel Admin
-            </Link>
-          </NavbarMenuItem>
+          <>
+            <NavbarMenuItem><Button variant="light" className="w-full justify-start text-white text-lg font-black uppercase h-16" startContent={<Home size={24} />} onPress={() => { navigate('/admin'); setIsMenuOpen(false); }}>Dashboard</Button></NavbarMenuItem>
+            <NavbarMenuItem><Button variant="light" className="w-full justify-start text-white text-lg font-black uppercase h-16" startContent={<Users size={24} />} onPress={() => { navigate('/admin/estudiantes'); setIsMenuOpen(false); }}>Estudiantes</Button></NavbarMenuItem>
+            <NavbarMenuItem><Button variant="light" className="w-full justify-start text-white text-lg font-black uppercase h-16" startContent={<Shield size={24} />} onPress={() => { navigate('/admin/docentes'); setIsMenuOpen(false); }}>Docentes</Button></NavbarMenuItem>
+            <NavbarMenuItem><Button variant="light" className="w-full justify-start text-white text-lg font-black uppercase h-16" startContent={<Layers size={24} />} onPress={() => { navigate('/admin/grupos'); setIsMenuOpen(false); }}>Grupos</Button></NavbarMenuItem>
+            <NavbarMenuItem><Button variant="light" className="w-full justify-start text-white text-lg font-black uppercase h-16" startContent={<Settings size={24} />} onPress={() => { navigate('/admin/configuracion'); setIsMenuOpen(false); }}>Configuración</Button></NavbarMenuItem>
+          </>
         )}
-        <NavbarMenuItem className="mt-10">
-          <Button color="danger" variant="flat" className="w-full text-white font-black uppercase" startContent={<LogOut size={20} />} onPress={handleLogout}>
-            Cerrar Sesión
-          </Button>
+        <NavbarMenuItem className="mt-auto pb-10">
+          <Button color="danger" variant="flat" className="w-full text-white font-black uppercase h-14" startContent={<LogOut size={20} />} onPress={handleLogout}>Cerrar Sesión</Button>
         </NavbarMenuItem>
       </NavbarMenu>
 
@@ -133,5 +135,3 @@ export default function AppHeader({ role }: { role: string }) {
     </Navbar>
   );
 }
-
-import { useDisclosure } from "@heroui/react";

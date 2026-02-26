@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import AppHeader from '../components/AppHeader';
 import AdminSidebar from '../components/AdminSidebar';
 import { Notification } from '../components/Notification';
 import { capitalizeName } from '../utils/formatUtils';
@@ -54,7 +55,8 @@ export default function ManageStudents() {
         // @ts-ignore
         result = await supabase.rpc('buscar_estudiantes', { termino_busqueda: search.trim() }).select('*', { count: 'exact' }).range(from, to);
       } else {
-        let query = supabase.from('estudiantes_reporte').select('*', { count: 'exact' } as any);
+        // @ts-ignore
+        let query = supabase.from('estudiantes_reporte').select('*', { count: 'exact' });
         if (selectedGrupo !== "all") query = query.eq('grupo_id', selectedGrupo);
         result = await query.order('nombre', { ascending: true }).range(from, to);
       }
@@ -103,7 +105,11 @@ export default function ManageStudents() {
   const handleEditClick = (student: any) => {
     setModalMode('edit');
     setSelectedStudent(student);
-    setFormData({ nombre: student.nombre, nie: student.nie, grupo_id: student.grupo_id || '' });
+    setFormData({
+      nombre: student.nombre,
+      nie: student.nie,
+      grupo_id: student.grupo_id || ''
+    });
     onOpen();
   };
 
@@ -125,9 +131,11 @@ export default function ManageStudents() {
       if (modalMode === 'edit') {
         const { error } = await supabase.from('estudiantes').update(studentData).eq('id', selectedStudent.id);
         if (error) throw error;
+        setNotification({ message: "Actualizado", type: 'success' });
       } else {
         const { error } = await supabase.from('estudiantes').insert([studentData]);
         if (error) throw error;
+        setNotification({ message: "Creado", type: 'success' });
       }
       fetchStudents();
       onClose();
@@ -152,9 +160,10 @@ export default function ManageStudents() {
   return (
     <div className="bg-[#f6f6f8] dark:bg-[#121620] font-['Lexend'] text-slate-900 dark:text-slate-100 min-h-screen">
       {notification && <Notification message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
+      <AppHeader role="admin" />
       <div className="flex min-h-screen">
         <AdminSidebar />
-        <main className="flex-1 md:ml-64 p-8">
+        <main className="flex-1 md:ml-64 p-4 md:p-8">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
             <h2 className="text-3xl font-black tracking-tight flex items-center gap-2"><GraduationCap className="text-[#1e3b8a]" size={32} /> Gestión de Estudiantes</h2>
             <div className="flex gap-3">
@@ -179,10 +188,10 @@ export default function ManageStudents() {
                   {(item) => <SelectItem key={item.id}>{item.nombre}</SelectItem>}
                 </Select>
               </div>
-              <p className="text-xs text-slate-400 font-bold uppercase">Total: {totalStudents}</p>
+              <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Total: {totalStudents}</p>
             </div>
             
-            <Table aria-label="Students" bottomContent={totalStudents > rowsPerPage ? <div className="flex w-full justify-center py-4"><Pagination isCompact showControls color="primary" page={page} total={Math.ceil(totalStudents / rowsPerPage)} onChange={setPage} /></div> : null}>
+            <Table aria-label="Students" bottomContent={totalStudents > rowsPerPage ? <div className="flex w-full justify-center py-4 border-t border-slate-100"><Pagination isCompact showControls color="primary" page={page} total={Math.ceil(totalStudents / rowsPerPage)} onChange={setPage} /></div> : null}>
               <TableHeader><TableColumn>ESTUDIANTE</TableColumn><TableColumn>NIE</TableColumn><TableColumn>GRUPO</TableColumn><TableColumn>FALTAS</TableColumn><TableColumn align="end">ACCIONES</TableColumn></TableHeader>
               <TableBody isLoading={isLoading} loadingContent={<Spinner />}>
                 {studentsList.map((student) => {

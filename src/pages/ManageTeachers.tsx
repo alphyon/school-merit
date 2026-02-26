@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Notification } from '../components/Notification';
+import AppHeader from '../components/AppHeader';
 import AdminSidebar from '../components/AdminSidebar';
 import ChangePasswordModal from '../components/ChangePasswordModal';
 import { 
@@ -64,11 +65,11 @@ export default function ManageTeachers() {
       setNotification({ message: "Campos incompletos", type: 'error' });
       return;
     }
-    
     setIsSubmitting(true);
     try {
       let teacherId = selectedTeacher?.id;
       if (modalMode === 'create') {
+        if (!formData.password) throw new Error("Contraseña requerida");
         const { data: authData, error: authError } = await supabase.auth.signUp({ email: formData.email, password: formData.password });
         if (authError) throw authError;
         const { data: tData, error: tError } = await supabase.from('docentes').insert([{ nombre: formData.nombre, email: formData.email }]).select().single();
@@ -105,12 +106,13 @@ export default function ManageTeachers() {
   return (
     <div className="bg-[#f6f6f8] dark:bg-[#121620] font-['Lexend'] text-slate-900 dark:text-slate-100 min-h-screen">
       {notification && <Notification message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
+      <AppHeader role="admin" />
       <div className="flex min-h-screen">
         <AdminSidebar />
-        <main className="flex-1 md:ml-64 p-8">
+        <main className="flex-1 md:ml-64 p-4 md:p-8">
           <div className="flex justify-between items-center mb-8">
             <h2 className="text-3xl font-black tracking-tight uppercase">Gestión de Docentes</h2>
-            <Button color="primary" className="bg-[#1e3b8a]" startContent={<Plus size={18} />} onPress={handleCreateClick}>Nuevo Docente</Button>
+            <Button color="primary" className="bg-[#1e3b8a]" startContent={<Plus size={18} />} onPress={handleCreateClick}>Nuevo</Button>
           </div>
           <Card className="border-slate-200 shadow-sm overflow-hidden">
             <Table aria-label="Docentes">
@@ -146,15 +148,8 @@ export default function ManageTeachers() {
             <Input label="Nombre" variant="bordered" value={formData.nombre} onValueChange={(v) => setFormData({...formData, nombre: v})} />
             <Input label="Email" variant="bordered" value={formData.email} onValueChange={(v) => setFormData({...formData, email: v})} />
             {modalMode === 'create' && <Input label="Pass" type={isPasswordVisible ? "text" : "password"} variant="bordered" value={formData.password} onValueChange={(v) => setFormData({...formData, password: v})} endContent={<button type="button" onClick={() => setIsPasswordVisible(!isPasswordVisible)}>{isPasswordVisible ? <EyeOff size={20} /> : <Eye size={20} />}</button>} />}
-            <Select 
-              label="Grupos" 
-              variant="bordered" 
-              selectionMode="multiple" 
-              selectedKeys={new Set(formData.grupo_ids)} 
-              onSelectionChange={(keys) => setFormData({...formData, grupo_ids: Array.from(keys) as string[]})}
-              items={grupos}
-            >
-              {(item) => <SelectItem key={item.id}>{item.nombre}</SelectItem>}
+            <Select label="Grupos" variant="bordered" selectionMode="multiple" selectedKeys={new Set(formData.grupo_ids)} onSelectionChange={(keys) => setFormData({...formData, grupo_ids: Array.from(keys) as string[]})} items={grupos}>
+              {(g) => <SelectItem key={g.id}>{g.nombre}</SelectItem>}
             </Select></ModalBody><ModalFooter><Button variant="light" onPress={onClose}>Cerrar</Button><Button color="primary" className="bg-[#1e3b8a]" isLoading={isSubmitting} onPress={() => handleSaveTeacher(onClose)}>Guardar</Button></ModalFooter></>
         )}</ModalContent>
       </Modal>
