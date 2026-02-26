@@ -129,8 +129,8 @@ export default function Login() {
                 onChange={(e) => setRole(e.target.value)}
                 className="w-full"
               >
-                <SelectItem key="docente" value="docente">Docente</SelectItem>
-                <SelectItem key="admin" value="admin">Administrador</SelectItem>
+                <SelectItem key="docente">Docente</SelectItem>
+                <SelectItem key="admin">Administrador</SelectItem>
               </Select>
 
               <Input

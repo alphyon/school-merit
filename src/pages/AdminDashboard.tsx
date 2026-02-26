@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import AdminSidebar from '../components/AdminSidebar';
 import { Notification } from '../components/Notification';
@@ -23,8 +22,6 @@ export default function AdminDashboard() {
   const [isExporting, setIsExporting] = useState(false);
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
   
-  const navigate = useNavigate();
-
   const handleMonthlyReport = async () => {
     setIsExporting(true);
     try {

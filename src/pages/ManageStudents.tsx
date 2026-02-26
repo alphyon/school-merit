@@ -6,7 +6,7 @@ import { Notification } from '../components/Notification';
 import { capitalizeName } from '../utils/formatUtils';
 import { importStudentsFromCSV } from '../utils/importStudents';
 import { 
-  Card, CardBody, Button, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, 
+  Card, Button, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, 
   User, Badge, Input, Pagination, Select, SelectItem,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Spinner, Chip
 } from "@heroui/react";
@@ -51,11 +51,10 @@ export default function ManageStudents() {
 
       let result;
       if (search) {
-        result = await supabase.rpc('buscar_estudiantes', { termino_busqueda: search.trim() })
-          .select('*', { count: 'exact' } as any)
-          .range(from, to);
+        // @ts-ignore
+        result = await supabase.rpc('buscar_estudiantes', { termino_busqueda: search.trim() }).select('*', { count: 'exact' }).range(from, to);
       } else {
-        let query = supabase.from('estudiantes_reporte').select('*', { count: 'exact' });
+        let query = supabase.from('estudiantes_reporte').select('*', { count: 'exact' } as any);
         if (selectedGrupo !== "all") query = query.eq('grupo_id', selectedGrupo);
         result = await query.order('nombre', { ascending: true }).range(from, to);
       }
@@ -157,16 +156,11 @@ export default function ManageStudents() {
         <AdminSidebar />
         <main className="flex-1 md:ml-64 p-8">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-            <div>
-              <h2 className="text-3xl font-black tracking-tight flex items-center gap-2">
-                <GraduationCap className="text-[#1e3b8a]" size={32} />
-                Gestión de Estudiantes
-              </h2>
-            </div>
+            <h2 className="text-3xl font-black tracking-tight flex items-center gap-2"><GraduationCap className="text-[#1e3b8a]" size={32} /> Gestión de Estudiantes</h2>
             <div className="flex gap-3">
-              <Button color="primary" className="bg-[#1e3b8a] font-bold" startContent={<Plus size={18} />} onPress={handleCreateClick}>Nuevo Estudiante</Button>
+              <Button color="primary" className="bg-[#1e3b8a]" startContent={<Plus size={18} />} onPress={handleCreateClick}>Nuevo</Button>
               <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".csv" className="hidden" />
-              <Button variant="bordered" className="bg-white" startContent={<FileUp size={18} />} isLoading={isImporting} onPress={() => fileInputRef.current?.click()}>Importar CSV</Button>
+              <Button variant="bordered" className="bg-white" startContent={<FileUp size={18} />} isLoading={isImporting} onPress={() => fileInputRef.current?.click()}>CSV</Button>
             </div>
           </div>
 
@@ -174,27 +168,27 @@ export default function ManageStudents() {
             <div className="p-6 border-b border-slate-200 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-50/50">
               <div className="flex flex-1 gap-4">
                 <Input className="max-w-xs" placeholder="Buscar..." startContent={<Search size={16} className="text-slate-400" />} size="sm" variant="flat" value={search} onValueChange={(val) => { setSearch(val); setPage(1); }} />
-                <Select className="max-w-xs" size="sm" placeholder="Grupo" selectedKeys={new Set([selectedGrupo])} onSelectionChange={(keys) => { setSelectedGrupo(Array.from(keys)[0] as string); setPage(1); }}>
-                  <SelectItem key="all">Todos los Grupos</SelectItem>
-                  {grupos.map((g) => <SelectItem key={g.id}>{g.nombre}</SelectItem>)}
+                <Select 
+                  className="max-w-xs" 
+                  size="sm" 
+                  placeholder="Grupo" 
+                  selectedKeys={new Set([selectedGrupo])} 
+                  onSelectionChange={(keys) => { setSelectedGrupo(Array.from(keys)[0] as string); setPage(1); }}
+                  items={[{id: 'all', nombre: 'Todos'}, ...grupos]}
+                >
+                  {(item) => <SelectItem key={item.id}>{item.nombre}</SelectItem>}
                 </Select>
               </div>
               <p className="text-xs text-slate-400 font-bold uppercase">Total: {totalStudents}</p>
             </div>
             
             <Table aria-label="Students" bottomContent={totalStudents > rowsPerPage ? <div className="flex w-full justify-center py-4"><Pagination isCompact showControls color="primary" page={page} total={Math.ceil(totalStudents / rowsPerPage)} onChange={setPage} /></div> : null}>
-              <TableHeader>
-                <TableColumn>ESTUDIANTE</TableColumn>
-                <TableColumn>NIE</TableColumn>
-                <TableColumn>GRUPO</TableColumn>
-                <TableColumn>FALTAS</TableColumn>
-                <TableColumn align="end">ACCIONES</TableColumn>
-              </TableHeader>
+              <TableHeader><TableColumn>ESTUDIANTE</TableColumn><TableColumn>NIE</TableColumn><TableColumn>GRUPO</TableColumn><TableColumn>FALTAS</TableColumn><TableColumn align="end">ACCIONES</TableColumn></TableHeader>
               <TableBody isLoading={isLoading} loadingContent={<Spinner />}>
                 {studentsList.map((student) => {
                   const isAlert = student.total_demeritos >= alertLimit;
                   return (
-                    <TableRow key={student.id} className={isAlert ? "bg-red-50 dark:bg-red-900/20" : ""}>
+                    <TableRow key={student.id} className={isAlert ? "bg-red-50" : ""}>
                       <TableCell><div className="flex items-center gap-2"><User name={capitalizeName(student.nombre)} avatarProps={{ name: student.nombre.charAt(0), size: "sm" }} description={student.nie} />{isAlert && <ShieldAlert size={16} className="text-red-600 animate-pulse" />}</div></TableCell>
                       <TableCell className="font-mono text-xs">{student.nie}</TableCell>
                       <TableCell><Badge color="primary" variant="flat" size="sm">{student.grupo_nombre || student.grado}</Badge></TableCell>
@@ -216,39 +210,26 @@ export default function ManageStudents() {
       </div>
 
       <Modal isOpen={isOpen} onOpenChange={onOpenChange} placement="center">
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader>{modalMode === 'edit' ? 'Editar' : 'Registrar'}</ModalHeader>
-              <ModalBody className="space-y-4">
-                <Input label="Nombre" variant="bordered" value={formData.nombre} onValueChange={(val) => setFormData({...formData, nombre: val})} />
-                <Input label="NIE" variant="bordered" value={formData.nie} onValueChange={(val) => setFormData({...formData, nie: val})} />
-                <Select label="Grupo" variant="bordered" selectedKeys={formData.grupo_id ? new Set([formData.grupo_id]) : new Set()} onSelectionChange={(keys) => setFormData({...formData, grupo_id: Array.from(keys)[0] as string})}>
-                  {grupos.map((g) => <SelectItem key={g.id}>{g.nombre}</SelectItem>)}
-                </Select>
-              </ModalBody>
-              <ModalFooter>
-                <Button variant="light" onPress={onClose}>Cancelar</Button>
-                <Button color="primary" className="bg-[#1e3b8a]" isLoading={isSubmitting} onPress={() => handleSaveStudent(onClose)}>Guardar</Button>
-              </ModalFooter>
-            </>
-          )}
-        </ModalContent>
+        <ModalContent>{(onClose) => (
+          <><ModalHeader>{modalMode === 'edit' ? 'Editar' : 'Registrar'}</ModalHeader><ModalBody className="space-y-4">
+            <Input label="Nombre" variant="bordered" value={formData.nombre} onValueChange={(val) => setFormData({...formData, nombre: val})} />
+            <Input label="NIE" variant="bordered" value={formData.nie} onValueChange={(val) => setFormData({...formData, nie: val})} />
+            <Select 
+              label="Grupo" 
+              variant="bordered" 
+              selectedKeys={formData.grupo_id ? new Set([formData.grupo_id]) : new Set()} 
+              onSelectionChange={(keys) => setFormData({...formData, grupo_id: Array.from(keys)[0] as string})}
+              items={grupos}
+            >
+              {(item) => <SelectItem key={item.id}>{item.nombre}</SelectItem>}
+            </Select></ModalBody><ModalFooter><Button variant="light" onPress={onClose}>Cerrar</Button><Button color="primary" className="bg-[#1e3b8a]" isLoading={isSubmitting} onPress={() => handleSaveStudent(onClose)}>Guardar</Button></ModalFooter></>
+        )}</ModalContent>
       </Modal>
 
       <Modal isOpen={isDeleteOpen} onOpenChange={onDeleteOpenChange} backdrop="blur">
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader className="text-red-600 font-black">⚠️ ELIMINAR</ModalHeader>
-              <ModalBody>¿Estás seguro de eliminar a <strong>{selectedStudent?.nombre}</strong>?</ModalBody>
-              <ModalFooter>
-                <Button variant="light" onPress={onClose}>Cancelar</Button>
-                <Button color="danger" variant="flat" isLoading={isSubmitting} onPress={() => confirmDeleteStudent(onClose)}>Eliminar</Button>
-              </ModalFooter>
-            </>
-          )}
-        </ModalContent>
+        <ModalContent>{(onClose) => (
+          <><ModalHeader className="text-red-600 font-black">⚠️ ELIMINAR</ModalHeader><ModalBody>¿Borrar a <strong>{selectedStudent?.nombre}</strong>?</ModalBody><ModalFooter><Button variant="light" onPress={onClose}>No</Button><Button color="danger" variant="flat" isLoading={isSubmitting} onPress={() => confirmDeleteStudent(onClose)}>Eliminar</Button></ModalFooter></>
+        )}</ModalContent>
       </Modal>
     </div>
   );

@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Notification } from '../components/Notification';
 import AdminSidebar from '../components/AdminSidebar';
 import { 
   Card, Button, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, 
   Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure,
-  Tabs, Tab, Chip, Textarea, Spinner
+  Tabs, Tab, Chip, Textarea
 } from "@heroui/react";
 import { Plus, Edit3, Trash2 } from 'lucide-react';
 
@@ -28,7 +27,7 @@ export default function ManageCatalogs() {
     setIsLoading(true);
     const table = activeTab === 'demeritos' ? 'demeritos_catalogo' : 'redenciones_catalogo';
     try {
-      const { data, error } = await supabase.from(table).select('*').order('codigo');
+      const { data } = await supabase.from(table).select('*').order('codigo');
       setItems(data || []);
     } catch (error: any) {
       setNotification({ message: "Error al cargar catálogo", type: 'error' });
@@ -72,6 +71,7 @@ export default function ManageCatalogs() {
       setNotification({ message: `Código ${modalMode === 'create' ? 'creado' : 'actualizado'}`, type: 'success' });
       fetchItems();
       onClose();
+      setFormData({ codigo: '', descripcion: '', puntos_valor: 0 });
     } catch (error: any) {
       setNotification({ message: "Error: " + error.message, type: 'error' });
     } finally { setIsSubmitting(false); }
@@ -120,11 +120,11 @@ export default function ManageCatalogs() {
                 <TableColumn>PUNTOS</TableColumn>
                 <TableColumn align="end">ACCIONES</TableColumn>
               </TableHeader>
-              <TableBody isLoading={isLoading} loadingContent={<Spinner />}>
+              <TableBody isLoading={isLoading} loadingContent={<div>Cargando...</div>}>
                 {items.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell><Chip color={activeTab === 'demeritos' ? 'danger' : 'success'} variant="flat" className="font-bold">{item.codigo}</Chip></TableCell>
-                    <TableCell className="max-w-md truncate">{item.descripcion}</TableCell>
+                    <TableCell>{item.descripcion}</TableCell>
                     <TableCell><span className="font-bold">{item.puntos_valor} pts</span></TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-2">

@@ -61,7 +61,7 @@ export default function ManageTeachers() {
 
   const handleSaveTeacher = async (onClose: () => void) => {
     if (!formData.nombre || !formData.email || formData.grupo_ids.length === 0) {
-      setNotification({ message: "Llene todos los campos", type: 'error' });
+      setNotification({ message: "Campos incompletos", type: 'error' });
       return;
     }
     
@@ -146,8 +146,15 @@ export default function ManageTeachers() {
             <Input label="Nombre" variant="bordered" value={formData.nombre} onValueChange={(v) => setFormData({...formData, nombre: v})} />
             <Input label="Email" variant="bordered" value={formData.email} onValueChange={(v) => setFormData({...formData, email: v})} />
             {modalMode === 'create' && <Input label="Pass" type={isPasswordVisible ? "text" : "password"} variant="bordered" value={formData.password} onValueChange={(v) => setFormData({...formData, password: v})} endContent={<button type="button" onClick={() => setIsPasswordVisible(!isPasswordVisible)}>{isPasswordVisible ? <EyeOff size={20} /> : <Eye size={20} />}</button>} />}
-            <Select label="Grupos" variant="bordered" selectionMode="multiple" selectedKeys={new Set(formData.grupo_ids)} onSelectionChange={(keys) => setFormData({...formData, grupo_ids: Array.from(keys) as string[]})}>
-              {grupos.map((g) => <SelectItem key={g.id}>{g.nombre}</SelectItem>)}
+            <Select 
+              label="Grupos" 
+              variant="bordered" 
+              selectionMode="multiple" 
+              selectedKeys={new Set(formData.grupo_ids)} 
+              onSelectionChange={(keys) => setFormData({...formData, grupo_ids: Array.from(keys) as string[]})}
+              items={grupos}
+            >
+              {(item) => <SelectItem key={item.id}>{item.nombre}</SelectItem>}
             </Select></ModalBody><ModalFooter><Button variant="light" onPress={onClose}>Cerrar</Button><Button color="primary" className="bg-[#1e3b8a]" isLoading={isSubmitting} onPress={() => handleSaveTeacher(onClose)}>Guardar</Button></ModalFooter></>
         )}</ModalContent>
       </Modal>

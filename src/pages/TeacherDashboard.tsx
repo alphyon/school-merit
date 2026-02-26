@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import AppHeader from '../components/AppHeader';
 import EventModal from '../components/EventModal';
 import { Notification } from '../components/Notification';
@@ -52,8 +52,10 @@ export default function TeacherDashboard() {
       const to = from + rowsPerPage - 1;
       let result;
       if (search) {
-        result = await supabase.rpc('buscar_estudiantes', { termino_busqueda: search.trim() }).select('*', { count: 'exact' } as any).eq('grupo_id', selectedGroupId).range(from, to);
+        // @ts-ignore
+        result = await supabase.rpc('buscar_estudiantes', { termino_busqueda: search.trim() }).select('*', { count: 'exact' }).eq('grupo_id', selectedGroupId).range(from, to);
       } else {
+        // @ts-ignore
         result = await supabase.from('estudiantes').select('*, grupos(nombre)', { count: 'exact' }).eq('grupo_id', selectedGroupId).order('nombre', { ascending: true }).range(from, to);
       }
       if (result.error) throw result.error;
@@ -81,7 +83,21 @@ export default function TeacherDashboard() {
         <div className="flex-1">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-8">
             <div><h2 className="text-3xl font-black text-[#1e3b8a] mb-2 uppercase tracking-tight">Gestión de Conducta</h2><p className="text-slate-500 font-bold uppercase text-xs tracking-widest">{assignedGroups.find(g => g.id === selectedGroupId)?.nombre || 'Docente'}</p></div>
-            {assignedGroups.length > 1 && (<div className="w-full md:w-64"><Select label="Grupo" size="sm" variant="flat" selectedKeys={new Set([selectedGroupId])} onSelectionChange={(keys) => setSelectedGroupId(Array.from(keys)[0] as string)} startContent={<Layers size={16} />} >{assignedGroups.map((g) => <SelectItem key={g.id}>{g.nombre}</SelectItem>)}</Select></div>)}
+            {assignedGroups.length > 1 && (
+              <div className="w-full md:w-64">
+                <Select 
+                  label="Grupo" 
+                  size="sm" 
+                  variant="flat" 
+                  selectedKeys={new Set([selectedGroupId])} 
+                  onSelectionChange={(keys) => setSelectedGroupId(Array.from(keys)[0] as string)} 
+                  startContent={<Layers size={16} />}
+                  items={assignedGroups}
+                >
+                  {(item) => <SelectItem key={item.id}>{item.nombre}</SelectItem>}
+                </Select>
+              </div>
+            )}
           </div>
           <div className="mb-6"><Input isClearable fullWidth size="lg" placeholder="Buscar..." startContent={<Search className="text-slate-400" />} value={search} onValueChange={(v) => { setSearch(v); setPage(1); }} variant="bordered" className="shadow-sm bg-white rounded-2xl" /></div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">{isLoading ? (<div className="col-span-full flex justify-center py-20"><Spinner size="lg" /></div>) : students.length === 0 ? (<div className="col-span-full text-center py-20 bg-white rounded-3xl border-2 border-dashed border-slate-200 text-slate-400 italic font-bold">Sin alumnos</div>) : students.map((student) => (

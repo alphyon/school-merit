@@ -1,11 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Notification } from '../components/Notification';
 import AdminSidebar from '../components/AdminSidebar';
 import { 
   Card, Button, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, 
-  Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure
+  Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Spinner
 } from "@heroui/react";
 import { Plus, Trash2 } from 'lucide-react';
 
@@ -89,7 +88,7 @@ export default function ManageGroups() {
                 <TableColumn>NOMBRE DEL GRUPO</TableColumn>
                 <TableColumn align="end">ACCIONES</TableColumn>
               </TableHeader>
-              <TableBody isLoading={isLoading} loadingContent={<div>Cargando...</div>}>
+              <TableBody isLoading={isLoading} loadingContent={<Spinner />}>
                 {grupos.map((g) => (
                   <TableRow key={g.id}>
                     <TableCell className="font-bold">{g.nombre}</TableCell>
@@ -106,7 +105,7 @@ export default function ManageGroups() {
         </main>
       </div>
 
-      <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
+      <Modal isOpen={isOpen} onOpenChange={onOpenChange} placement="center">
         <ModalContent>
           {(onClose) => (
             <>

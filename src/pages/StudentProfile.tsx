@@ -5,7 +5,6 @@ import AppHeader from '../components/AppHeader';
 import AdminSidebar from '../components/AdminSidebar';
 import { useReactToPrint } from 'react-to-print';
 import { PrintableReportCard } from '../components/PrintableReportCard';
-import { capitalizeName } from '../utils/formatUtils';
 import { Notification } from '../components/Notification';
 import { Card, CardBody, Avatar, Button, Badge, Spinner, Pagination } from "@heroui/react";
 import { 
