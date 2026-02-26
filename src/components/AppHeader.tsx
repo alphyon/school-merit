@@ -1,13 +1,16 @@
 import { useState, useEffect } from 'react';
-import { Navbar, NavbarBrand, NavbarContent, NavbarItem, Link, Avatar, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/react";
-import { GraduationCap, LogOut, Lock as LockIcon } from 'lucide-react';
+import { 
+  Navbar, NavbarBrand, NavbarContent, NavbarItem, Link, Avatar, Dropdown, 
+  DropdownTrigger, DropdownMenu, DropdownItem, NavbarMenuToggle, NavbarMenu, NavbarMenuItem 
+} from "@heroui/react";
+import { GraduationCap, LogOut, Lock as LockIcon, BarChart, Users } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { useDisclosure } from "@heroui/react";
 import ChangePasswordModal from './ChangePasswordModal';
 
 export default function AppHeader({ role }: { role: string }) {
   const {isOpen, onOpen, onOpenChange} = useDisclosure();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const [userData, setUserData] = useState<any>(null);
@@ -34,25 +37,35 @@ export default function AppHeader({ role }: { role: string }) {
   const isDocente = role === 'docente';
 
   return (
-    <Navbar className="bg-[#1e3b8a] text-white shadow-md py-3" maxWidth="xl">
+    <Navbar 
+      className="bg-[#1e3b8a] text-white shadow-md py-1" 
+      maxWidth="xl" 
+      isMenuOpen={isMenuOpen} 
+      onMenuOpenChange={setIsMenuOpen}
+    >
+      <NavbarContent className="sm:hidden" justify="start">
+        <NavbarMenuToggle aria-label={isMenuOpen ? "Cerrar menú" : "Abrir menú"} className="text-white" />
+      </NavbarContent>
+
       <NavbarBrand className="flex items-center gap-3 cursor-pointer" onClick={() => navigate(isDocente ? '/teacher' : '/admin')}>
         {settings.logo ? (
-          <img src={settings.logo} className="h-10 w-auto object-contain" alt="Logo" />
+          <img src={settings.logo} className="h-8 w-auto object-contain" alt="Logo" />
         ) : (
-          <GraduationCap className="text-3xl text-white" />
+          <GraduationCap className="text-2xl text-white" />
         )}
-        <div className="hidden sm:block">
-          <p className="text-[9px] font-black tracking-widest uppercase opacity-70">Sistema de Gestión de Méritos</p>
-          <p className="text-xs font-bold uppercase truncate max-w-[200px]">{settings.name}</p>
+        <div className="flex flex-col">
+          <p className="text-[8px] font-black tracking-widest uppercase opacity-70 leading-none">Gestión de Méritos</p>
+          <p className="text-[11px] font-bold uppercase truncate max-w-[150px] leading-tight">{settings.name}</p>
         </div>
       </NavbarBrand>
       
+      {/* Menú Desktop */}
       <NavbarContent className="hidden sm:flex gap-8" justify="center">
         {isDocente && (
           <>
             <NavbarItem isActive={location.pathname === '/teacher'}>
               <Link onPress={() => navigate('/teacher')} className={`text-[11px] font-black uppercase tracking-widest ${location.pathname === '/teacher' ? 'text-white border-b-2 border-white' : 'text-blue-200'}`}>
-                Mis Alumnos
+                Alumnos
               </Link>
             </NavbarItem>
             <NavbarItem isActive={location.pathname === '/teacher/reportes'}>
@@ -74,13 +87,51 @@ export default function AppHeader({ role }: { role: string }) {
               {userData?.name}
             </DropdownItem>
             <DropdownItem key="password" startContent={<LockIcon size={16} />} onClick={onOpen}>
-              Cambiar Contraseña
+              Seguridad
             </DropdownItem>
             <DropdownItem key="logout" color="danger" startContent={<LogOut size={16} />} onClick={handleLogout}>Cerrar Sesión</DropdownItem>
           </DropdownMenu>
         </Dropdown>
       </NavbarContent>
+
+      {/* Menú Móvil (Hamburguesa) */}
+      <NavbarMenu className="bg-[#1e3b8a] pt-10">
+        {isDocente ? (
+          <>
+            <NavbarMenuItem>
+              <Link 
+                className={`w-full text-white text-xl font-black uppercase py-4 border-b border-white/10 flex gap-3`} 
+                onPress={() => { navigate('/teacher'); setIsMenuOpen(false); }}
+              >
+                <Users size={24} /> Mis Alumnos
+              </Link>
+            </NavbarMenuItem>
+            <NavbarMenuItem>
+              <Link 
+                className={`w-full text-white text-xl font-black uppercase py-4 border-b border-white/10 flex gap-3`} 
+                onPress={() => { navigate('/teacher/reportes'); setIsMenuOpen(false); }}
+              >
+                <BarChart size={24} /> Reportes
+              </Link>
+            </NavbarMenuItem>
+          </>
+        ) : (
+          <NavbarMenuItem>
+            <Link className="w-full text-white text-xl font-black uppercase" onPress={() => { navigate('/admin'); setIsMenuOpen(false); }}>
+              Panel Admin
+            </Link>
+          </NavbarMenuItem>
+        )}
+        <NavbarMenuItem className="mt-10">
+          <Button color="danger" variant="flat" className="w-full text-white font-black uppercase" startContent={<LogOut size={20} />} onPress={handleLogout}>
+            Cerrar Sesión
+          </Button>
+        </NavbarMenuItem>
+      </NavbarMenu>
+
       <ChangePasswordModal isOpen={isOpen} onOpenChange={onOpenChange} />
     </Navbar>
   );
 }
+
+import { useDisclosure } from "@heroui/react";

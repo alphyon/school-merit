@@ -9,6 +9,7 @@ import ManageGroups from './pages/ManageGroups';
 import ManageCatalogs from './pages/ManageCatalogs';
 import AdminSettings from './pages/AdminSettings';
 import StudentProfile from './pages/StudentProfile';
+import NotFound from './pages/NotFound';
 
 function App() {
   return (
@@ -31,7 +32,7 @@ function App() {
         
         {/* Fallbacks */}
         <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="*" element={<div className="p-20 text-center font-bold text-xl uppercase tracking-widest text-slate-400">404 - Página No Encontrada</div>} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </Router>
   );
