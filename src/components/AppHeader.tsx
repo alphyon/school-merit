@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { 
   Navbar, NavbarBrand, NavbarContent, NavbarItem, Link, Avatar, Dropdown, 
-  DropdownTrigger, DropdownMenu, DropdownItem, NavbarMenuToggle, NavbarMenu, NavbarMenuItem 
+  DropdownTrigger, DropdownMenu, DropdownItem, NavbarMenuToggle, NavbarMenu, NavbarMenuItem, Button 
 } from "@heroui/react";
 import { GraduationCap, LogOut, Lock as LockIcon, BarChart, Users } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
