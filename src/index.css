@@ -1,0 +1,18 @@
+@import "tailwindcss";
+@plugin "../hero.ts";
+
+/* Forzamos el escaneo de los componentes de HeroUI para que Tailwind genere el CSS */
+@source "../node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}";
+/* También escaneamos nuestro propio código */
+@source "./**/*.{js,ts,jsx,tsx}";
+
+@theme {
+  --font-lexend: "Lexend", sans-serif;
+  --color-primary: #1e3b8a;
+}
+
+:root {
+  font-family: var(--font-lexend);
+}
+
+@custom-variant dark (&:is(.dark *));
