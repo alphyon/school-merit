@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   Avatar, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, useDisclosure,
-  Button, Badge
+  Button
 } from "@heroui/react";
 import { 
   LayoutDashboard, Users, GraduationCap, Layers, Shield, Settings, 
-  LogOut, Menu, X, Bell, BarChart, Lock
+  LogOut, Menu, X, BarChart, Lock
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import ChangePasswordModal from '../components/ChangePasswordModal';
@@ -27,7 +27,6 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
 
   const fetchSessionData = async () => {
     try {
-      // Solo intentamos fetch si hay red
       if (navigator.onLine) {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
@@ -44,9 +43,7 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
           localStorage.setItem('cached_config', JSON.stringify(configObj));
         }
       }
-    } catch (error) {
-      console.warn("Modo Offline: Usando datos en caché");
-    }
+    } catch (error) { console.warn("Offline mode"); }
   };
 
   useEffect(() => { fetchSessionData(); }, []);
@@ -133,10 +130,6 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
           </div>
 
           <div className="flex items-center gap-3">
-            <Badge color="danger" content="0" shape="circle" size="sm" variant="flat">
-              <Button isIconOnly variant="light" className="text-gray-400 hover:text-[#1e3b8a]"><Bell size={22} /></Button>
-            </Badge>
-            
             <div className="h-8 w-[1px] bg-gray-100 mx-2"></div>
 
             <Dropdown placement="bottom-end" backdrop="blur">
@@ -154,7 +147,7 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
                   <p className="font-black text-[10px] uppercase text-gray-400">Sesión iniciada</p>
                   <p className="font-bold text-[#1e3b8a]">{userData?.email || 'Modo Offline'}</p>
                 </DropdownItem>
-                <DropdownItem key="password" startContent={<Lock size={16} />} onClick={onOpen}>Cambiar Contraseña</DropdownItem>
+                <DropdownItem key="password" startContent={<Lock size={16} />} onClick={onOpen}>Seguridad</DropdownItem>
                 <DropdownItem key="logout" color="danger" startContent={<LogOut size={16} />} onClick={handleLogout}>Cerrar Sesión</DropdownItem>
               </DropdownMenu>
             </Dropdown>

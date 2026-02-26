@@ -10,10 +10,9 @@ import {
   User, Badge, Input, Pagination, Select, SelectItem,
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Spinner, Chip
 } from "@heroui/react";
-import { Search, Edit3, Trash2, FileUp, Plus, Eye, ShieldAlert } from 'lucide-react';
+import { Search, Edit3, Trash2, FileUp, GraduationCap, Plus, Eye, AlertTriangle } from 'lucide-react';
 
 export default function ManageStudents() {
-  // ... (Mantener estados existentes)
   const {isOpen, onOpen, onOpenChange} = useDisclosure();
   const {isOpen: isDeleteOpen, onOpen: onDeleteOpen, onOpenChange: onDeleteOpenChange} = useDisclosure();
   const [search, setSearch] = useState('');
@@ -26,7 +25,7 @@ export default function ManageStudents() {
   const [page, setPage] = useState(1);
   const [rowsPerPage] = useState(10);
   const [totalStudents, setTotalStudents] = useState(0);
-  const [alertLimit, setAlertLimit] = useState(10);
+  const [alertLimit, setAlertLimit] = useState(30);
   
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -36,7 +35,6 @@ export default function ManageStudents() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
-  // ... (Mantener funciones fetchData, handles, etc. igual que antes)
   const fetchGrupos = async () => {
     const { data } = await supabase.from('grupos').select('*').order('nombre');
     setGrupos(data || []);
@@ -49,17 +47,14 @@ export default function ManageStudents() {
       if (config) setAlertLimit(config.limite_demeritos_alerta);
 
       const from = (page - 1) * rowsPerPage;
-      const to = from + rowsPerPage - 1;
-
       let result;
       if (search) {
         // @ts-ignore
-        result = await supabase.rpc('buscar_estudiantes', { termino_busqueda: search.trim() }).select('*', { count: 'exact' }).range(from, to);
+        result = await supabase.rpc('buscar_estudiantes', { termino_busqueda: search.trim() }).select('*', { count: 'exact' }).range(from, from + rowsPerPage - 1);
       } else {
-        // @ts-ignore
-        let query = supabase.from('estudiantes_reporte').select('*', { count: 'exact' });
+        let query = supabase.from('estudiantes_reporte').select('*', { count: 'exact' } as any);
         if (selectedGrupo !== "all") query = query.eq('grupo_id', selectedGrupo);
-        result = await query.order('nombre', { ascending: true }).range(from, to);
+        result = await query.order('nombre', { ascending: true }).range(from, from + rowsPerPage - 1);
       }
 
       if (result.error) throw result.error;
@@ -128,25 +123,10 @@ export default function ManageStudents() {
       if (modalMode === 'edit') {
         const { error } = await supabase.from('estudiantes').update(studentData).eq('id', selectedStudent.id);
         if (error) throw error;
-        setNotification({ message: "Actualizado", type: 'success' });
       } else {
         const { error } = await supabase.from('estudiantes').insert([studentData]);
         if (error) throw error;
-        setNotification({ message: "Creado", type: 'success' });
       }
-      fetchStudents();
-      onClose();
-    } catch (error: any) {
-      setNotification({ message: "Error: " + error.message, type: 'error' });
-    } finally { setIsSubmitting(false); }
-  };
-
-  const confirmDeleteStudent = async (onClose: () => void) => {
-    setIsSubmitting(true);
-    try {
-      const { error } = await supabase.from('estudiantes').delete().eq('id', selectedStudent.id);
-      if (error) throw error;
-      setNotification({ message: "Eliminado", type: 'success' });
       fetchStudents();
       onClose();
     } catch (error: any) {
@@ -159,39 +139,39 @@ export default function ManageStudents() {
     onDeleteOpen();
   };
 
+  const confirmDelete = async (onClose: () => void) => {
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase.from('estudiantes').delete().eq('id', selectedStudent.id);
+      if (error) throw error;
+      setNotification({ message: "Eliminado", type: 'success' });
+      fetchStudents();
+      onClose();
+    } catch (error: any) {
+      setNotification({ message: "Error: " + error.message, type: 'error' });
+    } finally { setIsSubmitting(false); }
+  };
+
   return (
     <DashboardLayout role="admin">
       {notification && <Notification message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
-      
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight">Estudiantes</h1>
-          <p className="text-gray-500 font-medium text-sm">Directorio oficial y gestión académica</p>
-        </div>
-        <div className="flex gap-3 w-full md:w-auto">
-          <Button color="primary" className="bg-[#1e3b8a] font-bold shadow-lg shadow-blue-900/20 flex-1 md:flex-none" startContent={<Plus size={18} />} onPress={handleCreateClick}>Nuevo</Button>
+        <h2 className="text-2xl md:text-3xl font-black tracking-tight flex items-center gap-2 uppercase"><GraduationCap className="text-[#1e3b8a]" size={32} /> Estudiantes</h2>
+        <div className="flex gap-2 w-full md:w-auto">
+          <Button color="primary" className="bg-[#1e3b8a] font-black uppercase text-[10px] h-12" startContent={<Plus size={18} />} onPress={handleCreateClick}>Nuevo Alumno</Button>
           <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".csv" className="hidden" />
-          <Button variant="bordered" className="bg-white border-gray-200 font-bold text-gray-700 flex-1 md:flex-none" startContent={<FileUp size={18} />} isLoading={isImporting} onPress={() => fileInputRef.current?.click()}>Importar CSV</Button>
+          <Button variant="bordered" className="bg-white border-gray-200" startContent={<FileUp size={18} />} isLoading={isImporting} onPress={() => fileInputRef.current?.click()}>Importar CSV</Button>
         </div>
       </div>
 
       <Card className="border-none shadow-sm overflow-hidden bg-white">
-        <div className="p-6 border-b border-gray-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex flex-col sm:flex-row flex-1 gap-3 w-full">
-            <Input 
-              className="w-full sm:max-w-xs" 
-              placeholder="Buscar por nombre..." 
-              startContent={<Search size={18} className="text-gray-400" />} 
-              size="md" 
-              variant="bordered" 
-              value={search} 
-              onValueChange={(val) => { setSearch(val); setPage(1); }} 
-            />
+        <div className="p-4 md:p-6 border-b border-gray-100 flex flex-col lg:flex-row md:items-center justify-between gap-4">
+          <div className="flex flex-col md:flex-row flex-1 gap-3 w-full">
+            <Input className="w-full md:max-w-xs" placeholder="Buscar..." startContent={<Search size={16} className="text-slate-400" />} size="md" variant="bordered" value={search} onValueChange={(val) => { setSearch(val); setPage(1); }} />
             <Select 
-              className="w-full sm:max-w-xs" 
+              className="w-full md:max-w-xs" 
               size="md" 
-              placeholder="Filtrar por Grupo" 
-              variant="bordered"
+              placeholder="Grupo" 
               selectedKeys={new Set([selectedGrupo])} 
               onSelectionChange={(keys) => { setSelectedGrupo(Array.from(keys)[0] as string); setPage(1); }}
               items={[{id: 'all', nombre: 'Todos'}, ...grupos]}
@@ -199,54 +179,39 @@ export default function ManageStudents() {
               {(item) => <SelectItem key={item.id}>{item.nombre}</SelectItem>}
             </Select>
           </div>
-          <Chip variant="flat" color="primary" className="font-bold">Total: {totalStudents}</Chip>
+          <Chip variant="flat" color="primary" className="font-black uppercase text-[10px] tracking-widest">Total: {totalStudents}</Chip>
         </div>
         
-        {/* TABLA RESPONSIVA VERDADERA */}
-        <div className="w-full overflow-x-auto">
+        <div className="overflow-x-auto">
           <Table 
             aria-label="Students" 
             shadow="none"
-            classNames={{
-              wrapper: "min-w-[800px] p-0 shadow-none", // Forzar ancho mínimo
-              th: "bg-gray-50 text-gray-500 font-bold text-xs uppercase tracking-wider h-12",
-              td: "border-b border-gray-50 h-16"
-            }}
+            classNames={{ wrapper: "min-w-[800px] p-0 shadow-none", th: "bg-gray-50 text-gray-500 font-bold h-12" }}
           >
-            <TableHeader>
-              <TableColumn>ESTUDIANTE</TableColumn>
-              <TableColumn>NIE</TableColumn>
-              <TableColumn>GRUPO</TableColumn>
-              <TableColumn>FALTAS</TableColumn>
-              <TableColumn align="end">ACCIONES</TableColumn>
-            </TableHeader>
+            <TableHeader><TableColumn>ESTUDIANTE</TableColumn><TableColumn>NIE</TableColumn><TableColumn>GRUPO</TableColumn><TableColumn>FALTAS</TableColumn><TableColumn align="end">ACCIONES</TableColumn></TableHeader>
             <TableBody isLoading={isLoading} loadingContent={<Spinner />}>
               {studentsList.map((student) => {
                 const isAlert = student.total_demeritos >= alertLimit;
                 return (
-                  <TableRow key={student.id} className={isAlert ? "bg-red-50/50" : "hover:bg-gray-50"}>
+                  <TableRow key={student.id} className={`${isAlert ? "bg-red-50/50" : "hover:bg-gray-50"} border-b border-gray-50`}>
                     <TableCell>
-                      <div className="flex items-center gap-3">
-                        <User 
-                          name={capitalizeName(student.nombre)} 
-                          avatarProps={{ name: student.nombre.charAt(0), size: "sm", className: isAlert ? "bg-red-100 text-red-600" : "bg-blue-100 text-[#1e3b8a]" }} 
-                          classNames={{ name: "font-bold text-gray-900", description: "text-gray-400" }}
-                        />
-                        {isAlert && <ShieldAlert size={16} className="text-red-500 animate-pulse" />}
+                      <div className="flex items-center gap-2">
+                        <User name={capitalizeName(student.nombre)} avatarProps={{ name: student.nombre.charAt(0), size: "sm" }} description={student.nie} />
+                        {isAlert && <AlertTriangle size={16} className="text-red-600 animate-pulse" />}
                       </div>
                     </TableCell>
-                    <TableCell><span className="font-mono text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded">{student.nie}</span></TableCell>
-                    <TableCell><Badge color="primary" variant="flat" size="sm" className="font-bold border-none">{student.grupo_nombre || student.grado}</Badge></TableCell>
+                    <TableCell className="font-mono text-xs text-gray-500">{student.nie}</TableCell>
+                    <TableCell><Badge color="primary" variant="flat" size="sm" className="font-bold">{student.grupo_nombre || student.grado}</Badge></TableCell>
                     <TableCell>
-                      <Chip color={isAlert ? "danger" : "default"} variant={isAlert ? "solid" : "flat"} size="sm" className="font-black min-w-[40px] text-center">
+                      <Chip color={isAlert ? "danger" : "default"} variant={isAlert ? "solid" : "flat"} size="sm" className="font-black min-w-[45px] text-center">
                         {student.total_demeritos || 0}
                       </Chip>
                     </TableCell>
                     <TableCell>
                       <div className="flex justify-end gap-1">
-                        <Button isIconOnly variant="light" size="sm" className="text-gray-400 hover:text-blue-600" onClick={() => navigate(`/student/${student.id}`)}><Eye size={18} /></Button>
-                        <Button isIconOnly variant="light" size="sm" className="text-gray-400 hover:text-orange-500" onClick={() => handleEditClick(student)}><Edit3 size={18} /></Button>
-                        <Button isIconOnly variant="light" size="sm" className="text-gray-400 hover:text-red-500" onClick={() => handleDeleteClick(student)}><Trash2 size={18} /></Button>
+                        <Button isIconOnly variant="light" size="sm" color="success" onClick={() => navigate(`/student/${student.id}`)}><Eye size={18} /></Button>
+                        <Button isIconOnly variant="light" size="sm" color="primary" onClick={() => handleEditClick(student)}><Edit3 size={18} /></Button>
+                        <Button isIconOnly variant="light" size="sm" color="danger" onClick={() => handleDeleteClick(student)}><Trash2 size={18} /></Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -255,40 +220,23 @@ export default function ManageStudents() {
             </TableBody>
           </Table>
         </div>
-
-        {/* PAGINACIÓN EXTERNA Y LIMPIA */}
-        {totalStudents > rowsPerPage && (
-          <div className="flex w-full justify-center py-6 border-t border-gray-100 bg-white">
-            <Pagination 
-              isCompact 
-              showControls 
-              color="primary" 
-              page={page} 
-              total={Math.ceil(totalStudents / rowsPerPage)} 
-              onChange={setPage}
-              classNames={{
-                cursor: "bg-[#1e3b8a] shadow-lg shadow-blue-900/20 font-bold"
-              }}
-            />
-          </div>
-        )}
+        <div className="flex justify-center py-6 border-t border-gray-100"><Pagination isCompact showControls color="primary" page={page} total={Math.ceil(totalStudents / rowsPerPage)} onChange={setPage} /></div>
       </Card>
 
-      {/* Modals remain the same... */}
       <Modal isOpen={isOpen} onOpenChange={onOpenChange} placement="center">
         <ModalContent>{(onClose) => (
-          <><ModalHeader>{modalMode === 'edit' ? 'Editar' : 'Registrar'}</ModalHeader><ModalBody className="space-y-4">
+          <><ModalHeader className="font-black uppercase">{modalMode === 'edit' ? 'Editar' : 'Registrar'}</ModalHeader><ModalBody className="space-y-4">
             <Input label="Nombre" variant="bordered" value={formData.nombre} onValueChange={(val) => setFormData({...formData, nombre: val})} />
             <Input label="NIE" variant="bordered" value={formData.nie} onValueChange={(val) => setFormData({...formData, nie: val})} />
-            <Select label="Grupo" variant="bordered" selectedKeys={formData.grupo_id ? new Set([formData.grupo_id]) : new Set()} onSelectionChange={(keys) => setFormData({...formData, grupo_id: Array.from(keys)[0] as string})}>
-              {grupos.map((g) => <SelectItem key={g.id}>{g.nombre}</SelectItem>)}
-            </Select></ModalBody><ModalFooter><Button variant="light" onPress={onClose}>Cancelar</Button><Button color="primary" className="bg-[#1e3b8a]" isLoading={isSubmitting} onPress={() => handleSaveStudent(onClose)}>Guardar</Button></ModalFooter></>
+            <Select label="Grupo" variant="bordered" selectedKeys={formData.grupo_id ? new Set([formData.grupo_id]) : new Set()} onSelectionChange={(keys) => setFormData({...formData, grupo_id: Array.from(keys)[0] as string})} items={grupos}>
+              {(g) => <SelectItem key={g.id}>{g.nombre}</SelectItem>}
+            </Select></ModalBody><ModalFooter><Button variant="light" onPress={onClose}>Cerrar</Button><Button color="primary" className="bg-[#1e3b8a] font-black uppercase text-xs h-12 px-8" isLoading={isSubmitting} onPress={() => handleSaveStudent(onClose)}>Guardar</Button></ModalFooter></>
         )}</ModalContent>
       </Modal>
 
       <Modal isOpen={isDeleteOpen} onOpenChange={onDeleteOpenChange} backdrop="blur">
         <ModalContent>{(onClose) => (
-          <><ModalHeader className="text-red-600 font-black">⚠️ ELIMINAR</ModalHeader><ModalBody>¿Borrar a <strong>{selectedStudent?.nombre}</strong>?</ModalBody><ModalFooter><Button variant="light" onPress={onClose}>No</Button><Button color="danger" variant="flat" isLoading={isSubmitting} onPress={() => confirmDeleteStudent(onClose)}>Eliminar</Button></ModalFooter></>
+          <><ModalHeader className="text-red-600 font-black">ELIMINAR</ModalHeader><ModalBody>¿Borrar a <strong>{selectedStudent?.nombre}</strong>?</ModalBody><ModalFooter><Button variant="light" onPress={onClose}>No</Button><Button color="danger" variant="flat" isLoading={isSubmitting} onPress={() => confirmDelete(onClose)}>Eliminar</Button></ModalFooter></>
         )}</ModalContent>
       </Modal>
     </DashboardLayout>
