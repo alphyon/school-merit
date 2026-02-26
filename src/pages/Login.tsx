@@ -191,7 +191,7 @@ export default function Login() {
           </CardBody>
         </Card>
         <div className="mt-8 text-center text-slate-400 text-xs">
-          <p>© 2024 Deméritos Pro. Todos los derechos reservados.</p>
+          <p>Sistema de Gestión Escolar. Todos los derechos reservados.</p>
         </div>
       </div>
     </div>
