@@ -101,15 +101,15 @@ export default function AdminSettings() {
               </div>
               
               <div className="flex items-center gap-2 text-red-600 font-black uppercase text-xs tracking-widest border-b pb-2 pt-4">
-                <ShieldAlert size={18} /> Alertas de Conducta
+                <ShieldAlert size={18} /> Regla de Expulsión
               </div>
               <Input 
-                label="Límite de Faltas para Alerta" 
+                label="Límite de Puntos Acumulados" 
                 type="number"
                 variant="bordered"
                 value={settings.limite_demeritos_alerta.toString()}
                 onValueChange={(v) => setSettings({...settings, limite_demeritos_alerta: Number(v)})}
-                description="Alumnos con este número de faltas aparecerán en rojo."
+                description="Alerta crítica cuando el alumno acumule este puntaje en deméritos."
               />
 
               <Button color="primary" className="bg-[#1e3b8a] font-bold h-12 w-full text-sm shadow-lg shadow-blue-900/20" startContent={<Save size={20} />} isLoading={isSaving} onPress={handleSaveSettings}>
