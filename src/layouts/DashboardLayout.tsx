@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   Avatar, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, useDisclosure,
-  Button
+  Button, Badge
 } from "@heroui/react";
 import { 
   LayoutDashboard, Users, GraduationCap, Layers, Shield, Settings, 
-  LogOut, Menu, X, BarChart, Lock
+  LogOut, Menu, X, Bell, BarChart, Lock
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import ChangePasswordModal from '../components/ChangePasswordModal';
@@ -18,21 +18,35 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children, role }: DashboardLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [userData, setUserData] = useState<any>(null);
-  const [schoolConfig, setSchoolConfig] = useState({ name: 'SISTEMA', logo: '' });
+  const [userData, setUserData] = useState<any>(JSON.parse(localStorage.getItem('cached_user') || 'null'));
+  const [schoolConfig, setSchoolConfig] = useState(JSON.parse(localStorage.getItem('cached_config') || '{"name": "SISTEMA", "logo": ""}'));
   const {isOpen, onOpen, onOpenChange} = useDisclosure();
   
   const navigate = useNavigate();
   const location = useLocation();
 
   const fetchSessionData = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data: profile } = await supabase.from('perfiles').select('full_name, role').eq('id', user.id).single();
-      setUserData({ name: profile?.full_name || user.email, email: user.email });
+    try {
+      // Solo intentamos fetch si hay red
+      if (navigator.onLine) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profile } = await supabase.from('perfiles').select('full_name, role').eq('id', user.id).single();
+          const userObj = { name: profile?.full_name || user.email, email: user.email };
+          setUserData(userObj);
+          localStorage.setItem('cached_user', JSON.stringify(userObj));
+        }
+        
+        const { data: config } = await supabase.from('configuracion_sistema').select('nombre_escuela, logo_url').single();
+        if (config) {
+          const configObj = { name: config.nombre_escuela, logo: config.logo_url };
+          setSchoolConfig(configObj);
+          localStorage.setItem('cached_config', JSON.stringify(configObj));
+        }
+      }
+    } catch (error) {
+      console.warn("Modo Offline: Usando datos en caché");
     }
-    const { data: config } = await supabase.from('configuracion_sistema').select('nombre_escuela, logo_url').single();
-    if (config) setSchoolConfig({ name: config.nombre_escuela, logo: config.logo_url });
   };
 
   useEffect(() => { fetchSessionData(); }, []);
@@ -97,7 +111,7 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
           <div className="flex items-center gap-4">
             <Avatar size="sm" isBordered color="secondary" name={userData?.name?.charAt(0)} />
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-black truncate uppercase tracking-tighter">{userData?.name}</p>
+              <p className="text-xs font-black truncate uppercase tracking-tighter">{userData?.name || 'Usuario'}</p>
               <p className="text-[9px] text-blue-300 uppercase font-bold">{role}</p>
             </div>
             <button onClick={handleLogout} className="p-2 hover:bg-red-500 rounded-xl transition-colors"><LogOut size={18} /></button>
@@ -105,10 +119,7 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
         </div>
       </aside>
 
-      {/* Main Area */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden relative">
-        
-        {/* Universal Header */}
         <header className="h-20 bg-white dark:bg-[#1e293b] border-b border-gray-100 dark:border-gray-800 flex items-center justify-between px-6 lg:px-10 shadow-sm z-10">
           <div className="flex items-center gap-4 lg:hidden">
             <button onClick={() => setIsSidebarOpen(true)} className="p-3 bg-gray-100 rounded-2xl text-[#1e3b8a]"><Menu /></button>
@@ -122,13 +133,17 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
           </div>
 
           <div className="flex items-center gap-3">
+            <Badge color="danger" content="0" shape="circle" size="sm" variant="flat">
+              <Button isIconOnly variant="light" className="text-gray-400 hover:text-[#1e3b8a]"><Bell size={22} /></Button>
+            </Badge>
+            
             <div className="h-8 w-[1px] bg-gray-100 mx-2"></div>
 
             <Dropdown placement="bottom-end" backdrop="blur">
               <DropdownTrigger>
                 <div className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded-2xl transition-colors">
                   <div className="hidden sm:block text-right">
-                    <p className="text-xs font-black text-gray-900 uppercase leading-none mb-1">{userData?.name}</p>
+                    <p className="text-xs font-black text-gray-900 uppercase leading-none mb-1">{userData?.name || 'Usuario'}</p>
                     <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">{role}</p>
                   </div>
                   <Avatar size="md" isBordered color="primary" className="shadow-md" name={userData?.name?.charAt(0)} />
@@ -137,7 +152,7 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
               <DropdownMenu aria-label="Profile" variant="flat">
                 <DropdownItem key="profile" className="h-14 gap-2">
                   <p className="font-black text-[10px] uppercase text-gray-400">Sesión iniciada</p>
-                  <p className="font-bold text-[#1e3b8a]">{userData?.email}</p>
+                  <p className="font-bold text-[#1e3b8a]">{userData?.email || 'Modo Offline'}</p>
                 </DropdownItem>
                 <DropdownItem key="password" startContent={<Lock size={16} />} onClick={onOpen}>Cambiar Contraseña</DropdownItem>
                 <DropdownItem key="logout" color="danger" startContent={<LogOut size={16} />} onClick={handleLogout}>Cerrar Sesión</DropdownItem>
@@ -146,7 +161,6 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
           </div>
         </header>
 
-        {/* Mobile Sidebar (Drawer) */}
         {isSidebarOpen && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 lg:hidden animate-in fade-in duration-300" onClick={() => setIsSidebarOpen(false)}>
             <div className="absolute left-0 top-0 bottom-0 w-[280px] bg-[#1e3b8a] shadow-2xl flex flex-col p-6 slide-in-from-left duration-300" onClick={e => e.stopPropagation()}>

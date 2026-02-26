@@ -61,27 +61,23 @@ export default function AdminDashboard() {
         </Button>
       </div>
 
-      {/* Tarjetas Métricas Rediseñadas */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      {/* Tarjetas Métricas Reales */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
         {[
-          { label: 'Deméritos Totales', value: stats.demerits, icon: <ShieldAlert className="text-white" size={24} />, bg: 'bg-gradient-to-br from-red-500 to-red-600', trend: '+12%' },
-          { label: 'Redenciones', value: stats.redemptions, icon: <BadgeCheck className="text-white" size={24} />, bg: 'bg-gradient-to-br from-emerald-500 to-emerald-600', trend: '+5%' },
-          { label: 'Matrícula Activa', value: stats.active, icon: <Users className="text-white" size={24} />, bg: 'bg-gradient-to-br from-blue-500 to-blue-600', trend: 'Estable' }
+          { label: 'Deméritos Totales', value: stats.demerits, icon: <ShieldAlert className="text-white" size={24} />, bg: 'bg-gradient-to-br from-red-500 to-red-600' },
+          { label: 'Redenciones', value: stats.redemptions, icon: <BadgeCheck className="text-white" size={24} />, bg: 'bg-gradient-to-br from-emerald-500 to-emerald-600' },
+          { label: 'Matrícula Activa', value: stats.active, icon: <Users className="text-white" size={24} />, bg: 'bg-gradient-to-br from-[#1e3b8a] to-blue-700' }
         ].map((metric, idx) => (
-          <Card key={idx} className="border-none shadow-sm hover:shadow-md transition-shadow">
+          <Card key={idx} className="border-none shadow-sm hover:translate-y-[-4px] transition-all duration-300 bg-white">
             <CardBody className="p-6">
-              <div className="flex justify-between items-start">
+              <div className="flex justify-between items-center">
                 <div>
-                  <p className="text-gray-500 font-bold text-xs uppercase tracking-wider mb-1">{metric.label}</p>
-                  <h3 className="text-4xl font-black text-gray-900">{metric.value}</h3>
+                  <p className="text-gray-400 font-black text-[10px] uppercase tracking-[0.2em] mb-2">{metric.label}</p>
+                  <h3 className="text-4xl font-black text-gray-900 tracking-tighter">{metric.value.toLocaleString()}</h3>
                 </div>
-                <div className={`p-3 rounded-xl shadow-lg ${metric.bg}`}>
+                <div className={`p-4 rounded-2xl shadow-lg ${metric.bg}`}>
                   {metric.icon}
                 </div>
-              </div>
-              <div className="mt-4 flex items-center gap-2">
-                <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-lg text-xs font-bold">{metric.trend}</span>
-                <span className="text-gray-400 text-xs">vs mes anterior</span>
               </div>
             </CardBody>
           </Card>

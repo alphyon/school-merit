@@ -8,6 +8,19 @@ export interface LocalStudent {
   grupo_nombre: string;
 }
 
+export interface LocalGroup {
+  id: string;
+  nombre: string;
+}
+
+export interface LocalCatalogItem {
+  id: string;
+  codigo: string;
+  descripcion: string;
+  puntos_valor: number;
+  tipo: 'demerito' | 'redencion';
+}
+
 export interface PendingEvent {
   id?: number;
   estudiante_id: string;
@@ -22,12 +35,16 @@ export interface PendingEvent {
 
 export class MyDatabase extends Dexie {
   students!: Table<LocalStudent>;
+  groups!: Table<LocalGroup>;
+  catalog!: Table<LocalCatalogItem>;
   pendingEvents!: Table<PendingEvent>;
 
   constructor() {
     super('DemeritosOfflineDB');
-    this.version(1).stores({
+    this.version(2).stores({ // Subimos versión para aplicar cambios
       students: 'id, nie, nombre, grupo_id',
+      groups: 'id, nombre',
+      catalog: 'id, codigo, tipo',
       pendingEvents: '++id, estudiante_id, sync_status'
     });
   }
