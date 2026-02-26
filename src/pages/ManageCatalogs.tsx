@@ -1,14 +1,13 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Notification } from '../components/Notification';
-import AppHeader from '../components/AppHeader';
-import AdminSidebar from '../components/AdminSidebar';
+import DashboardLayout from '../layouts/DashboardLayout';
 import { 
   Card, Button, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, 
   Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure,
   Tabs, Tab, Chip, Textarea, Spinner
 } from "@heroui/react";
-import { Plus, Edit3, Trash2 } from 'lucide-react';
+import { Plus, Edit3, Trash2, Shield, ShieldAlert, BadgeCheck } from 'lucide-react';
 
 export default function ManageCatalogs() {
   const {isOpen, onOpen, onOpenChange} = useDisclosure();
@@ -92,58 +91,77 @@ export default function ManageCatalogs() {
   };
 
   return (
-    <div className="bg-[#f6f6f8] dark:bg-[#121620] font-['Lexend'] text-slate-900 dark:text-slate-100 min-h-screen">
+    <DashboardLayout role="admin">
       {notification && <Notification message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
-      <AppHeader role="admin" />
-      <div className="flex min-h-screen">
-        <AdminSidebar />
-        <main className="flex-1 md:ml-64 p-4 md:p-8">
-          <div className="flex justify-between items-center mb-8">
-            <h2 className="text-3xl font-black tracking-tight uppercase">Catálogos</h2>
-            <Button color="primary" className="bg-[#1e3b8a]" startContent={<Plus size={18} />} onPress={handleCreateClick}>Nuevo</Button>
-          </div>
-
-          <Tabs selectedKey={activeTab} onSelectionChange={(k) => setActiveTab(k as string)} variant="underlined" color="primary" className="mb-6">
-            <Tab key="demeritos" title="Deméritos" />
-            <Tab key="redenciones" title="Redenciones" />
-          </Tabs>
-
-          <Card className="border-slate-200 shadow-sm overflow-hidden">
-            <Table aria-label="Catalog">
-              <TableHeader>
-                <TableColumn>CÓDIGO</TableColumn>
-                <TableColumn>DESCRIPCIÓN</TableColumn>
-                <TableColumn>PUNTOS</TableColumn>
-                <TableColumn align="end">ACCIONES</TableColumn>
-              </TableHeader>
-              <TableBody isLoading={isLoading} loadingContent={<Spinner />}>
-                {items.map((item) => (
-                  <TableRow key={item.id}>
-                    <TableCell><Chip color={activeTab === 'demeritos' ? 'danger' : 'success'} variant="flat">{item.codigo}</Chip></TableCell>
-                    <TableCell className="max-w-md truncate">{item.descripcion}</TableCell>
-                    <TableCell><span className="font-bold">{item.puntos_valor} pts</span></TableCell>
-                    <TableCell>
-                      <div className="flex justify-end gap-2">
-                        <Button isIconOnly variant="light" size="sm" color="primary" onPress={() => handleEditClick(item)}><Edit3 size={18} /></Button>
-                        <Button isIconOnly variant="light" size="sm" color="danger" onPress={() => { setSelectedItem(item); onDeleteOpen(); }}><Trash2 size={18} /></Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Card>
-        </main>
+      
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight flex items-center gap-2">
+            <Shield className="text-[#1e3b8a]" size={32} /> Catálogos
+          </h1>
+          <p className="text-gray-500 font-medium text-sm">Códigos de conducta oficiales</p>
+        </div>
+        <Button color="primary" className="bg-[#1e3b8a] font-bold shadow-lg" startContent={<Plus size={18} />} onPress={handleCreateClick}>Nuevo Código</Button>
       </div>
 
+      <Tabs 
+        selectedKey={activeTab} 
+        onSelectionChange={(k) => setActiveTab(k as string)} 
+        variant="light" 
+        color="primary" 
+        className="mb-6"
+        classNames={{
+          tabList: "bg-white p-1 rounded-xl shadow-sm border border-gray-100",
+          cursor: "bg-[#1e3b8a] shadow-md",
+          tab: "h-10",
+          tabContent: "group-data-[selected=true]:text-white font-bold"
+        }}
+      >
+        <Tab key="demeritos" title={<div className="flex items-center gap-2"><ShieldAlert size={16}/> Deméritos</div>} />
+        <Tab key="redenciones" title={<div className="flex items-center gap-2"><BadgeCheck size={16}/> Redenciones</div>} />
+      </Tabs>
+
+      <Card className="border-none shadow-sm overflow-hidden bg-white">
+        <div className="w-full overflow-x-auto">
+          <Table aria-label="Catalog" shadow="none" classNames={{ wrapper: "min-w-[600px] p-0 shadow-none", th: "bg-gray-50 text-gray-500 font-bold h-12" }}>
+            <TableHeader>
+              <TableColumn>CÓDIGO</TableColumn>
+              <TableColumn>DESCRIPCIÓN</TableColumn>
+              <TableColumn>PUNTOS</TableColumn>
+              <TableColumn align="end">ACCIONES</TableColumn>
+            </TableHeader>
+            <TableBody isLoading={isLoading} loadingContent={<Spinner />}>
+              {items.map((item) => (
+                <TableRow key={item.id} className="hover:bg-gray-50 border-b border-gray-50">
+                  <TableCell><Chip color={activeTab === 'demeritos' ? 'danger' : 'success'} variant="flat" size="sm" className="font-bold">{item.codigo}</Chip></TableCell>
+                  <TableCell className="max-w-md truncate font-medium text-gray-700">{item.descripcion}</TableCell>
+                  <TableCell><span className={`font-black ${activeTab === 'demeritos' ? 'text-red-600' : 'text-emerald-600'}`}>{item.puntos_valor} pts</span></TableCell>
+                  <TableCell>
+                    <div className="flex justify-end gap-1">
+                      <Button isIconOnly variant="light" size="sm" className="text-blue-400 hover:text-blue-600" onPress={() => handleEditClick(item)}><Edit3 size={18} /></Button>
+                      <Button isIconOnly variant="light" size="sm" className="text-red-400 hover:text-red-600" onPress={() => { setSelectedItem(item); onDeleteOpen(); }}><Trash2 size={18} /></Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </Card>
+
       <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
-        <ModalContent>{(onClose) => (
-          <><ModalHeader className="font-black uppercase">{modalMode === 'edit' ? 'Editar' : 'Nuevo'}</ModalHeader><ModalBody className="space-y-4">
-            <Input label="Código" variant="bordered" value={formData.codigo} onValueChange={(v) => setFormData({...formData, codigo: v})} />
-            <Textarea label="Descripción" variant="bordered" value={formData.descripcion} onValueChange={(v) => setFormData({...formData, descripcion: v})} />
-            <Input label="Puntos" type="number" variant="bordered" value={formData.puntos_valor.toString()} onValueChange={(v) => setFormData({...formData, puntos_valor: Number(v)})} />
-          </ModalBody><ModalFooter><Button variant="light" onPress={onClose}>Cancelar</Button><Button color="primary" className="bg-[#1e3b8a]" isLoading={isSubmitting} onPress={() => handleSaveItem(onClose)}>Guardar</Button></ModalFooter></>
-        )}</ModalContent>
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader className="font-black uppercase">{modalMode === 'edit' ? 'Editar' : 'Nuevo'}</ModalHeader>
+              <ModalBody className="space-y-4">
+                <Input label="Código" variant="bordered" value={formData.codigo} onValueChange={(v) => setFormData({...formData, codigo: v})} />
+                <Textarea label="Descripción" variant="bordered" value={formData.descripcion} onValueChange={(v) => setFormData({...formData, descripcion: v})} />
+                <Input label="Puntos" type="number" variant="bordered" value={formData.puntos_valor.toString()} onValueChange={(v) => setFormData({...formData, puntos_valor: Number(v)})} />
+              </ModalBody><ModalFooter><Button variant="light" onPress={onClose}>Cancelar</Button><Button color="primary" className="bg-[#1e3b8a]" isLoading={isSubmitting} onPress={() => handleSaveItem(onClose)}>Guardar</Button></ModalFooter>
+            </>
+          )}
+        </ModalContent>
       </Modal>
 
       <Modal isOpen={isDeleteOpen} onOpenChange={onDeleteOpenChange} backdrop="blur">
@@ -151,6 +169,6 @@ export default function ManageCatalogs() {
           <><ModalHeader className="text-red-600 font-black">ELIMINAR</ModalHeader><ModalBody>¿Borrar código <strong>{selectedItem?.codigo}</strong>?</ModalBody><ModalFooter><Button variant="light" onPress={onClose}>No</Button><Button color="danger" variant="flat" isLoading={isSubmitting} onPress={() => confirmDeleteItem(onClose)}>Eliminar</Button></ModalFooter></>
         )}</ModalContent>
       </Modal>
-    </div>
+    </DashboardLayout>
   );
 }

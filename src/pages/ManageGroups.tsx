@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Notification } from '../components/Notification';
-import AppHeader from '../components/AppHeader';
-import AdminSidebar from '../components/AdminSidebar';
+import DashboardLayout from '../layouts/DashboardLayout';
 import { 
   Card, Button, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, 
   Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Spinner
 } from "@heroui/react";
-import { Plus, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Layers } from 'lucide-react';
 
 export default function ManageGroups() {
   const {isOpen, onOpen, onOpenChange} = useDisclosure();
@@ -68,46 +67,48 @@ export default function ManageGroups() {
   };
 
   return (
-    <div className="bg-[#f6f6f8] dark:bg-[#121620] font-['Lexend'] text-slate-900 dark:text-slate-100 min-h-screen">
+    <DashboardLayout role="admin">
       {notification && <Notification message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
-      <AppHeader role="admin" />
-      <div className="flex min-h-screen">
-        <AdminSidebar />
-        <main className="flex-1 md:ml-64 p-4 md:p-8">
-          <div className="flex justify-between items-center mb-8">
-            <h2 className="text-3xl font-black tracking-tight">Gestión de Grupos</h2>
-            <Button color="primary" className="bg-[#1e3b8a]" startContent={<Plus size={18} />} onPress={onOpen}>Nuevo</Button>
-          </div>
-
-          <Card className="border-slate-200 shadow-sm overflow-hidden">
-            <Table aria-label="Grupos Table">
-              <TableHeader>
-                <TableColumn>NOMBRE DEL GRUPO</TableColumn>
-                <TableColumn align="end">ACCIONES</TableColumn>
-              </TableHeader>
-              <TableBody isLoading={isLoading} loadingContent={<Spinner />}>
-                {grupos.map((g) => (
-                  <TableRow key={g.id}>
-                    <TableCell className="font-bold">{g.nombre}</TableCell>
-                    <TableCell>
-                      <div className="flex justify-end">
-                        <Button isIconOnly variant="light" size="sm" color="danger" onPress={() => { setSelectedGrupo(g); onDeleteOpen(); }}><Trash2 size={18} /></Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Card>
-        </main>
+      
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight flex items-center gap-2">
+            <Layers className="text-[#1e3b8a]" size={32} /> Grupos Escolares
+          </h1>
+          <p className="text-gray-500 font-medium text-sm">Estructura académica oficial</p>
+        </div>
+        <Button color="primary" className="bg-[#1e3b8a] font-bold shadow-lg" startContent={<Plus size={18} />} onPress={onOpen}>Nuevo Grupo</Button>
       </div>
+
+      <Card className="border-none shadow-sm overflow-hidden bg-white">
+        <div className="w-full overflow-x-auto">
+          <Table aria-label="Grupos" shadow="none" classNames={{ wrapper: "min-w-[600px] p-0 shadow-none", th: "bg-gray-50 text-gray-500 font-bold h-12" }}>
+            <TableHeader>
+              <TableColumn>NOMBRE DEL GRUPO</TableColumn>
+              <TableColumn align="end">ACCIONES</TableColumn>
+            </TableHeader>
+            <TableBody isLoading={isLoading} loadingContent={<Spinner />}>
+              {grupos.map((g) => (
+                <TableRow key={g.id} className="hover:bg-gray-50 border-b border-gray-50">
+                  <TableCell className="font-bold text-gray-900">{g.nombre}</TableCell>
+                  <TableCell>
+                    <div className="flex justify-end">
+                      <Button isIconOnly variant="light" size="sm" className="text-red-400 hover:text-red-600" onPress={() => { setSelectedGrupo(g); onDeleteOpen(); }}><Trash2 size={18} /></Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </Card>
 
       <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader>Registrar Grupo</ModalHeader>
-              <ModalBody><Input label="Nombre del Grupo" placeholder="Ej: 9 A" variant="bordered" value={nombre} onValueChange={setNombre} /></ModalBody>
+              <ModalHeader className="font-black uppercase">Nuevo Grupo</ModalHeader>
+              <ModalBody><Input label="Nombre" placeholder="Ej: 9 A" variant="bordered" value={nombre} onValueChange={setNombre} /></ModalBody>
               <ModalFooter>
                 <Button variant="light" onPress={onClose}>Cancelar</Button>
                 <Button color="primary" className="bg-[#1e3b8a]" isLoading={isSubmitting} onPress={() => handleAddGrupo(onClose)}>Guardar</Button>
@@ -121,7 +122,7 @@ export default function ManageGroups() {
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="text-red-600 font-black">⚠️ ELIMINAR</ModalHeader>
+              <ModalHeader className="text-red-600 font-black">ELIMINAR</ModalHeader>
               <ModalBody>¿Borrar el grupo <strong>{selectedGrupo?.nombre}</strong>?</ModalBody>
               <ModalFooter>
                 <Button variant="light" onPress={onClose}>No</Button>
@@ -131,6 +132,6 @@ export default function ManageGroups() {
           )}
         </ModalContent>
       </Modal>
-    </div>
+    </DashboardLayout>
   );
 }

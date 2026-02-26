@@ -1,15 +1,14 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Notification } from '../components/Notification';
-import AppHeader from '../components/AppHeader';
-import AdminSidebar from '../components/AdminSidebar';
+import DashboardLayout from '../layouts/DashboardLayout';
 import ChangePasswordModal from '../components/ChangePasswordModal';
 import { 
   Card, Button, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, 
   Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure,
   Select, SelectItem, Avatar, Badge, Spinner
 } from "@heroui/react";
-import { Plus, Edit3, Trash2, Key, Eye, EyeOff } from 'lucide-react';
+import { Plus, Edit3, Trash2, Key, Eye, EyeOff, Shield } from 'lucide-react';
 
 export default function ManageTeachers() {
   const {isOpen, onOpen, onOpenChange} = useDisclosure();
@@ -60,11 +59,17 @@ export default function ManageTeachers() {
     onOpen();
   };
 
+  const handleResetPasswordClick = (teacher: any) => {
+    setSelectedTeacher(teacher);
+    onPasswordOpen();
+  };
+
   const handleSaveTeacher = async (onClose: () => void) => {
     if (!formData.nombre || !formData.email || formData.grupo_ids.length === 0) {
       setNotification({ message: "Campos incompletos", type: 'error' });
       return;
     }
+    
     setIsSubmitting(true);
     try {
       let teacherId = selectedTeacher?.id;
@@ -104,44 +109,57 @@ export default function ManageTeachers() {
   };
 
   return (
-    <div className="bg-[#f6f6f8] dark:bg-[#121620] font-['Lexend'] text-slate-900 dark:text-slate-100 min-h-screen">
+    <DashboardLayout role="admin">
       {notification && <Notification message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
-      <AppHeader role="admin" />
-      <div className="flex min-h-screen">
-        <AdminSidebar />
-        <main className="flex-1 md:ml-64 p-4 md:p-8">
-          <div className="flex justify-between items-center mb-8">
-            <h2 className="text-3xl font-black tracking-tight uppercase">Gestión de Docentes</h2>
-            <Button color="primary" className="bg-[#1e3b8a]" startContent={<Plus size={18} />} onPress={handleCreateClick}>Nuevo</Button>
-          </div>
-          <Card className="border-slate-200 shadow-sm overflow-hidden">
-            <Table aria-label="Docentes">
-              <TableHeader>
-                <TableColumn>NOMBRE</TableColumn>
-                <TableColumn>EMAIL</TableColumn>
-                <TableColumn>GRUPOS</TableColumn>
-                <TableColumn align="end">ACCIONES</TableColumn>
-              </TableHeader>
-              <TableBody isLoading={isLoading} loadingContent={<Spinner />}>
-                {teachers.map((teacher) => (
-                  <TableRow key={teacher.id}>
-                    <TableCell><div className="flex items-center gap-3"><Avatar name={teacher.nombre.charAt(0)} size="sm" /><span className="font-bold">{teacher.nombre}</span></div></TableCell>
-                    <TableCell className="text-slate-500 font-medium">{teacher.email}</TableCell>
-                    <TableCell><div className="flex flex-wrap gap-1">{teacher.docentes_grupos?.map((dg: any) => <Badge key={dg.grupos?.nombre} color="primary" variant="flat" size="sm" className="font-bold uppercase text-[10px]">{dg.grupos?.nombre}</Badge>)}</div></TableCell>
-                    <TableCell>
-                      <div className="flex justify-end gap-2">
-                        <Button isIconOnly variant="light" size="sm" color="warning" onClick={() => { setSelectedTeacher(teacher); onPasswordOpen(); }}><Key size={18} /></Button>
-                        <Button isIconOnly variant="light" size="sm" color="primary" onPress={() => handleEditClick(teacher)}><Edit3 size={18} /></Button>
-                        <Button isIconOnly variant="light" size="sm" color="danger" onClick={() => { setSelectedTeacher(teacher); onDeleteOpen(); }}><Trash2 size={18} /></Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Card>
-        </main>
+      
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight flex items-center gap-2">
+            <Shield className="text-[#1e3b8a]" size={32} /> Docentes
+          </h1>
+          <p className="text-gray-500 font-medium text-sm">Gestión del personal académico</p>
+        </div>
+        <Button color="primary" className="bg-[#1e3b8a] font-bold shadow-lg" startContent={<Plus size={18} />} onPress={handleCreateClick}>Nuevo Docente</Button>
       </div>
+
+      <Card className="border-none shadow-sm overflow-hidden bg-white">
+        <div className="w-full overflow-x-auto">
+          <Table aria-label="Docentes" shadow="none" classNames={{ wrapper: "min-w-[800px] p-0 shadow-none", th: "bg-gray-50 text-gray-500 font-bold h-12" }}>
+            <TableHeader>
+              <TableColumn>NOMBRE</TableColumn>
+              <TableColumn>EMAIL</TableColumn>
+              <TableColumn>GRUPOS</TableColumn>
+              <TableColumn align="end">ACCIONES</TableColumn>
+            </TableHeader>
+            <TableBody isLoading={isLoading} loadingContent={<Spinner />}>
+              {teachers.map((teacher) => (
+                <TableRow key={teacher.id} className="hover:bg-gray-50 border-b border-gray-50">
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <Avatar name={teacher.nombre.charAt(0)} size="sm" className="bg-blue-100 text-[#1e3b8a] font-bold" />
+                      <span className="font-bold text-gray-900">{teacher.nombre}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-gray-500 font-medium">{teacher.email}</TableCell>
+                  <TableCell>
+                    <div className="flex flex-wrap gap-1">
+                      {teacher.docentes_grupos?.map((dg: any) => <Badge key={dg.grupos?.nombre} color="primary" variant="flat" size="sm" className="font-bold border-none">{dg.grupos?.nombre}</Badge>)}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex justify-end gap-1">
+                      <Button isIconOnly variant="light" size="sm" className="text-orange-400 hover:text-orange-600" onClick={() => handleResetPasswordClick(teacher)}><Key size={18} /></Button>
+                      <Button isIconOnly variant="light" size="sm" className="text-blue-400 hover:text-blue-600" onPress={() => handleEditClick(teacher)}><Edit3 size={18} /></Button>
+                      <Button isIconOnly variant="light" size="sm" className="text-red-400 hover:text-red-600" onPress={() => { setSelectedTeacher(teacher); onDeleteOpen(); }}><Trash2 size={18} /></Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </Card>
+
       <Modal isOpen={isOpen} onOpenChange={onOpenChange} placement="center">
         <ModalContent>{(onClose) => (
           <><ModalHeader className="font-black uppercase">{modalMode === 'edit' ? 'Editar' : 'Registrar'}</ModalHeader><ModalBody className="space-y-4">
@@ -157,6 +175,6 @@ export default function ManageTeachers() {
       <Modal isOpen={isDeleteOpen} onOpenChange={onDeleteOpenChange} backdrop="blur"><ModalContent>{(onClose) => (
         <><ModalHeader className="text-red-600 font-black">ELIMINAR</ModalHeader><ModalBody>¿Borrar a <strong>{selectedTeacher?.nombre}</strong>?</ModalBody><ModalFooter><Button variant="light" onPress={onClose}>No</Button><Button color="danger" variant="flat" isLoading={isSubmitting} onPress={() => confirmDeleteTeacher(onClose)}>Sí, eliminar</Button></ModalFooter></>
       )}</ModalContent></Modal>
-    </div>
+    </DashboardLayout>
   );
 }
