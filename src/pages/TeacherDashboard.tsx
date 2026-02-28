@@ -27,12 +27,12 @@ export default function TeacherDashboard() {
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
-      setNotification({ message: "Conexión restaurada", type: 'success' });
-      fetchData(); // Refrescar para ver si hay cambios en la nube
+      setNotification({ message: "Conexión restaurada", type: 'success' }); // El componente Notification usa 'success' como azul usualmente, pero podemos personalizarlo
+      fetchData(); 
     };
     const handleOffline = () => {
       setIsOnline(false);
-      setNotification({ message: "Modo Offline activado", type: 'error' });
+      setNotification({ message: "Modo Offline activado", type: 'error' }); // Usaremos 'error' para forzar color de advertencia
     };
 
     window.addEventListener('online', handleOnline);
@@ -177,14 +177,21 @@ export default function TeacherDashboard() {
           }));
           setStudents(enriched);
           
-          // Actualizar caché local
-          const localToSave = cloud.map(s => ({
-            id: s.id, nie: s.nie, nombre: s.nombre, grupo_id: s.grupo_id, grupo_nombre: s.grupo_nombre
+          // ACTUALIZACIÓN CRÍTICA: Guardar alumnos con sus puntos en Dexie
+          const localToSave = enriched.map(s => ({
+            id: s.id, 
+            nie: s.nie, 
+            nombre: s.nombre, 
+            grupo_id: s.grupo_id, 
+            grupo_nombre: s.grupo_nombre,
+            balance_puntos: s.balance_puntos,
+            puntos_limpiados: s.puntos_limpiados,
+            total_reconocimientos: s.total_reconocimientos
           }));
           await db.students.bulkPut(localToSave);
         }
       } else {
-        // RESCATE OFFLINE: Cargar desde Dexie
+        // RESCATE OFFLINE: Cargar desde Dexie (ahora con puntos!)
         const localStudents = await db.students.where('grupo_id').equals(groupId).toArray();
         setStudents(localStudents);
       }

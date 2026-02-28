@@ -6,6 +6,9 @@ export interface LocalStudent {
   nombre: string;
   grupo_id: string;
   grupo_nombre: string;
+  balance_puntos?: number;
+  puntos_limpiados?: number;
+  total_reconocimientos?: number;
 }
 
 export interface LocalGroup {
