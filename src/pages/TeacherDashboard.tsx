@@ -112,10 +112,11 @@ export default function TeacherDashboard() {
       await fetchCatalogsToLocal();
       
       if (navigator.onLine) {
-        // QUITADO EL AUTO-SYNC DE AQUÍ PARA DAR CONTROL AL USUARIO
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-        const { data: profile } = await supabase.from('perfiles').select('teacher_id, full_name').eq('id', user.id).single();
+        // La sincronización es manual, se ha quitado de aquí para evitar bucles infinitos
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session?.user) return;
+        
+        const { data: profile } = await supabase.from('perfiles').select('teacher_id, full_name').eq('id', session.user.id).single();
         if (profile?.teacher_id) {
           setTeacherName(profile.full_name || "Docente");
           localStorage.setItem('teacher_id', profile.teacher_id);
@@ -125,6 +126,7 @@ export default function TeacherDashboard() {
           await db.groups.bulkPut(groups);
           
           const savedId = localStorage.getItem('teacher_group_id');
+          // VALIDACIÓN CRÍTICA: Asegurar que el ID existe en la colección antes de pasarlo al Select
           const targetId = (savedId && groups.some(g => g.id === savedId)) ? savedId : (groups[0]?.id || "");
           if (targetId) { setSelectedGroupId(targetId); fetchStudents(targetId); }
         }
@@ -137,7 +139,7 @@ export default function TeacherDashboard() {
       }
     } catch (e) { 
       const localGroups = await db.groups.toArray();
-      setAssignedGroups(localGroups);
+      if (localGroups.length > 0) setAssignedGroups(localGroups);
     } finally { setIsLoading(false); }
   };
 
@@ -228,7 +230,21 @@ export default function TeacherDashboard() {
       <Card className="mb-8 border-none shadow-sm bg-white">
         <CardBody className="p-4 flex flex-col md:flex-row gap-4 text-slate-900">
           <Input className="flex-1" aria-label="Buscar alumnos" placeholder="Buscar alumno..." startContent={<Search size={18} className="text-gray-400" />} value={searchTerm} onValueChange={setSearchTerm} variant="bordered" />
-          <Select className="w-full md:w-64" aria-label="Seleccionar grupo" placeholder="Sección" variant="bordered" selectedKeys={selectedGroupId ? [selectedGroupId] : []} onSelectionChange={(k) => { const id = Array.from(k)[0] as string; setSelectedGroupId(id); localStorage.setItem('teacher_group_id', id); fetchStudents(id); }}>
+          <Select 
+            className="w-full md:w-64" 
+            aria-label="Seleccionar grupo" 
+            placeholder="Sección" 
+            variant="bordered" 
+            selectedKeys={assignedGroups.length > 0 && selectedGroupId ? [selectedGroupId] : []} 
+            onSelectionChange={(k) => { 
+              const id = Array.from(k)[0] as string; 
+              if (id) {
+                setSelectedGroupId(id); 
+                localStorage.setItem('teacher_group_id', id); 
+                fetchStudents(id); 
+              }
+            }}
+          >
             {assignedGroups.map((g) => <SelectItem key={g.id} textValue={g.nombre}>{g.nombre}</SelectItem>)}
           </Select>
         </CardBody>
