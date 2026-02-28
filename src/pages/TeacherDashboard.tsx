@@ -55,16 +55,16 @@ export default function TeacherDashboard() {
     try {
       for (const event of pending) {
         const { id, sync_status, ...eventData } = event;
-        // 1. Asegurar que estamos enviando el ID de docente correcto (Auth UUID)
-        const realUserId = localStorage.getItem('supabase_user_id');
-        if (realUserId) eventData.docente_id = realUserId;
+        // 1. Usar el ID de la tabla 'docentes' que es el que espera la FK
+        const realTeacherId = localStorage.getItem('teacher_id');
+        if (realTeacherId) eventData.docente_id = realTeacherId;
 
         const { error } = await supabase.from('registros_eventos').insert(eventData);
         if (!error) {
           await db.pendingEvents.delete(id!);
           successCount++;
         } else {
-          console.error("Error sincronizando registro:", error.message);
+          console.error("Error sincronizando:", error.message);
           errorOccurred = true;
         }
       }

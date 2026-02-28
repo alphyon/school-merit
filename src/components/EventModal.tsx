@@ -90,20 +90,18 @@ export default function EventModal({ isOpen, onOpenChange, studentId, studentNam
 
   const handleSubmit = async (onClose: () => void) => {
     if (!selectedItem || !studentId) return;
-    const realUserId = localStorage.getItem('supabase_user_id');
     const teacherId = localStorage.getItem('teacher_id');
     
-    // Usamos el realUserId (Auth UUID) para la base de datos, 
-    // y teacherId como fallback solo si no existe el anterior.
-    const docenteIdToSave = realUserId || teacherId;
-    
-    if (!docenteIdToSave) return;
+    if (!teacherId) {
+      setNotification({ message: "No se encontró ID de docente", type: 'error' });
+      return;
+    }
 
     setIsSubmitting(true);
     try {
       const eventData: any = {
         estudiante_id: studentId,
-        docente_id: docenteIdToSave, 
+        docente_id: teacherId, 
         tipo: activeTab,
         demerito_id: activeTab === 'demerito' ? selectedItem.id : null,
         redencion_id: activeTab === 'redencion' ? selectedItem.id : null,
@@ -134,7 +132,7 @@ export default function EventModal({ isOpen, onOpenChange, studentId, studentNam
       // Fallback de seguridad: si la red falla inesperadamente
       await db.pendingEvents.add({
         estudiante_id: studentId!,
-        docente_id: docenteIdToSave,
+        docente_id: teacherId,
         tipo: activeTab as any,
         demerito_id: activeTab === 'demerito' ? selectedItem.id : null,
         redencion_id: activeTab === 'redencion' ? selectedItem.id : null,

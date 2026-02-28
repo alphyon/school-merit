@@ -71,10 +71,15 @@ export default function Login() {
         }
 
         if (profile.role === 'docente') {
-          const { data: tData } = await supabase.from('docentes').select('grupo_id').eq('id', profile.teacher_id).single();
-          if (tData?.grupo_id) {
-            localStorage.setItem('teacher_group_id', tData.grupo_id);
+          // Guardamos el teacher_id directamente del perfil, que es el UUID de la tabla 'docentes'
+          if (profile.teacher_id) {
             localStorage.setItem('teacher_id', profile.teacher_id);
+            
+            // Buscamos sus grupos en la tabla correcta (docentes_grupos)
+            const { data: gData } = await supabase.from('docentes_grupos').select('grupo_id').eq('docente_id', profile.teacher_id).limit(1);
+            if (gData && gData.length > 0) {
+              localStorage.setItem('teacher_group_id', gData[0].grupo_id);
+            }
           }
         }
 
