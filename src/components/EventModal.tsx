@@ -13,7 +13,7 @@ interface EventModalProps {
   onOpenChange: (isOpen: boolean) => void;
   studentId?: string;
   studentName?: string;
-  onSuccess?: () => void;
+  onSuccess?: (type: string, points: number) => void;
   initialTab?: string;
   initialDemeritId?: string; // Propiedad para pre-seleccionar la falta
 }
@@ -128,7 +128,7 @@ export default function EventModal({ isOpen, onOpenChange, studentId, studentNam
         setNotification({ message: "Guardado localmente (Offline)", type: 'success' });
       }
       
-      if (onSuccess) onSuccess();
+      if (onSuccess) onSuccess(activeTab, selectedItem.puntos_valor || 0);
       setTimeout(onClose, 500);
     } catch (error: any) {
       // Fallback: si falla la red inesperadamente, salvar en Dexie
@@ -145,7 +145,7 @@ export default function EventModal({ isOpen, onOpenChange, studentId, studentNam
         sync_status: 'pending'
       });
       setNotification({ message: "Guardado en local por error de red", type: 'success' });
-      if (onSuccess) onSuccess();
+      if (onSuccess) onSuccess(activeTab, selectedItem.puntos_valor || 0);
       setTimeout(onClose, 800);
     } finally { setIsSubmitting(false); }
   };

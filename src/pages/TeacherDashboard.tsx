@@ -19,7 +19,7 @@ export default function TeacherDashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<{id: string, name: string} | null>(null);
   const [modalTab, setModalTab] = useState("demerito");
-  const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+  const [notification, setNotification] = useState<{message: string, type: 'success' | 'error' | 'info' | 'warning'} | null>(null);
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -27,12 +27,12 @@ export default function TeacherDashboard() {
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
-      setNotification({ message: "Conexión restaurada", type: 'success' }); // El componente Notification usa 'success' como azul usualmente, pero podemos personalizarlo
+      setNotification({ message: "Conexión restaurada", type: 'info' });
       fetchData(); 
     };
     const handleOffline = () => {
       setIsOnline(false);
-      setNotification({ message: "Modo Offline activado", type: 'error' }); // Usaremos 'error' para forzar color de advertencia
+      setNotification({ message: "Modo Offline activado", type: 'warning' });
     };
 
     window.addEventListener('online', handleOnline);
@@ -45,7 +45,7 @@ export default function TeacherDashboard() {
   }, []);
 
   const fetchCatalogsToLocal = async () => {
-    if (!navigator.onLine) return;
+    if (!isOnline) return;
     try {
       const catalogs = [
         { table: 'demeritos_catalogo', tipo: 'demerito' },
@@ -65,8 +65,8 @@ export default function TeacherDashboard() {
   };
 
   const syncPendingEvents = async () => {
-    if (!navigator.onLine || isSyncing) {
-      if (!navigator.onLine) setNotification({ message: "No hay conexión a internet", type: 'error' });
+    if (!isOnline || isSyncing) {
+      if (!isOnline) setNotification({ message: "No hay conexión a internet", type: 'warning' });
       return;
     }
     
@@ -81,7 +81,6 @@ export default function TeacherDashboard() {
       for (const event of pending) {
         const { id, sync_status, ...eventData } = event;
         
-        // Mapeo explícito para evitar fallos de integridad
         const payload = {
           estudiante_id: eventData.estudiante_id,
           docente_id: eventData.docente_id,
@@ -108,7 +107,7 @@ export default function TeacherDashboard() {
       
       if (successCount > 0) {
         setNotification({ message: `Sincronizados ${successCount} registros con éxito`, type: 'success' });
-        await fetchData(); // Recargar todo
+        await fetchData();
       }
       if (errorCount > 0) {
         setNotification({ message: `Error en ${errorCount} registros. Verifique consola.`, type: 'error' });
@@ -132,8 +131,7 @@ export default function TeacherDashboard() {
       await checkPendingSync();
       await fetchCatalogsToLocal();
       
-      if (navigator.onLine) {
-        // La sincronización es manual, se ha quitado de aquí para evitar bucles infinitos
+      if (isOnline) {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.user) return;
         
@@ -147,7 +145,6 @@ export default function TeacherDashboard() {
           await db.groups.bulkPut(groups);
           
           const savedId = localStorage.getItem('teacher_group_id');
-          // VALIDACIÓN CRÍTICA: Asegurar que el ID existe en la colección antes de pasarlo al Select
           const targetId = (savedId && groups.some(g => g.id === savedId)) ? savedId : (groups[0]?.id || "");
           if (targetId) { setSelectedGroupId(targetId); fetchStudents(targetId); }
         }
@@ -166,7 +163,7 @@ export default function TeacherDashboard() {
 
   const fetchStudents = async (groupId: string) => {
     try {
-      if (navigator.onLine) {
+      if (isOnline) {
         const { data: cloud } = await supabase.from('estudiantes_reporte').select('*').eq('grupo_id', groupId);
         if (cloud) {
           const studentIds = cloud.map(s => s.id);
@@ -177,7 +174,6 @@ export default function TeacherDashboard() {
           }));
           setStudents(enriched);
           
-          // ACTUALIZACIÓN CRÍTICA: Guardar alumnos con sus puntos en Dexie
           const localToSave = enriched.map(s => ({
             id: s.id, 
             nie: s.nie, 
@@ -191,7 +187,6 @@ export default function TeacherDashboard() {
           await db.students.bulkPut(localToSave);
         }
       } else {
-        // RESCATE OFFLINE: Cargar desde Dexie (ahora con puntos!)
         const localStudents = await db.students.where('grupo_id').equals(groupId).toArray();
         setStudents(localStudents);
       }
@@ -210,13 +205,24 @@ export default function TeacherDashboard() {
     setIsModalOpen(true);
   };
 
-  const handleEventSuccess = async () => {
-    checkPendingSync();
+  const handleEventSuccess = async (type: string, points: number) => {
+    await checkPendingSync();
+    
+    // ACTUALIZACIÓN VISUAL VIRTUAL INSTANTÁNEA
+    setStudents(prev => prev.map(s => {
+      if (s.id === selectedStudent?.id) {
+        if (type === 'demerito') return { ...s, balance_puntos: (s.balance_puntos || 0) + points };
+        if (type === 'redencion') return { ...s, puntos_limpiados: (s.puntos_limpiados || 0) + points, balance_puntos: Math.max(0, (s.balance_puntos || 0) - points) };
+        if (type === 'reconocimiento') return { ...s, total_reconocimientos: (s.total_reconocimientos || 0) + 1 };
+      }
+      return s;
+    }));
+
     if (isOnline) {
-      await fetchStudents(selectedGroupId);
       setNotification({ message: "Registro guardado en la nube", type: 'success' });
+      await fetchStudents(selectedGroupId);
     } else {
-      setNotification({ message: "Guardado localmente. Sincroniza para actualizar puntos.", type: 'success' });
+      setNotification({ message: "Guardado localmente. Puntos actualizados.", type: 'warning' });
     }
   };
 
