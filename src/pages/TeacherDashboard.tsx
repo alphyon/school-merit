@@ -1,191 +1,143 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 import DashboardLayout from '../layouts/DashboardLayout';
 import EventModal from '../components/EventModal';
 import { Notification } from '../components/Notification';
-import { capitalizeName } from '../utils/formatUtils';
-import { Card, CardBody, Input, Button, useDisclosure, Pagination, Spinner, Select, SelectItem, Badge, Chip } from "@heroui/react";
-import { Search, ShieldAlert, BadgeCheck, Info, CloudOff, CloudSync, RefreshCw, AlertTriangle, Eye } from 'lucide-react';
-import { supabase } from '../lib/supabase';
-import { db } from '../lib/localDb';
-import { useLiveQuery } from 'dexie-react-hooks';
+import { Card, CardBody, Button, Select, SelectItem, Spinner, Avatar, Input } from "@heroui/react";
+import { Search, ShieldAlert, Award, History, LayoutDashboard, Users } from 'lucide-react';
 
 export default function TeacherDashboard() {
-  const [search, setSearch] = useState('');
-  const [students, setStudents] = useState<any[]>([]);
+  const navigate = useNavigate();
+  const [teacherName, setTeacherName] = useState("");
   const [assignedGroups, setAssignedGroups] = useState<any[]>([]);
+  const [students, setStudents] = useState<any[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string>(localStorage.getItem('teacher_group_id') || "");
   const [isLoading, setIsLoading] = useState(true);
-  const [dailyStats, setDailyStats] = useState({ demerits: 0, redemptions: 0 });
-  const [page, setPage] = useState(1);
-  const [rowsPerPage] = useState(8);
-  const [totalStudents, setTotalStudents] = useState(0);
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [alertLimit, setAlertLimit] = useState(30);
-  
-  const navigate = useNavigate();
-  const {isOpen, onOpen, onOpenChange} = useDisclosure();
-  const [selectedStudent, setSelectedStudent] = useState<any>(null);
-  const [initialTab, setInitialTab] = useState("demeritos");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<{id: string, name: string} | null>(null);
+  const [modalTab, setModalTab] = useState("demerito");
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
 
-  const localPendingEvents = useLiveQuery(() => db.pendingEvents.toArray()) || [];
-  const pendingCount = localPendingEvents.length;
+  const fetchData = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: profile } = await supabase.from('perfiles').select('teacher_id, full_name').eq('id', user.id).single();
+      if (profile?.teacher_id) {
+        setTeacherName(profile.full_name || "Docente");
+        localStorage.setItem('teacher_id', profile.teacher_id);
+        const { data: groupsData } = await supabase.from('docentes_grupos').select('grupos(id, nombre)').eq('docente_id', profile.teacher_id);
+        const groups = groupsData?.map((g: any) => g.grupos).filter(Boolean) || [];
+        setAssignedGroups(groups);
+        const savedId = localStorage.getItem('teacher_group_id');
+        const targetId = (savedId && groups.some(g => g.id === savedId)) ? savedId : (groups[0]?.id || "");
+        if (targetId) { setSelectedGroupId(targetId); fetchStudents(targetId); }
+      }
+    } catch (e) { console.error(e); } finally { setIsLoading(false); }
+  };
 
-  useEffect(() => {
-    const handleOnline = () => { setIsOnline(true); syncOfflineData(); };
-    const handleOffline = () => setIsOnline(false);
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-    return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, [localPendingEvents]);
-
-  const syncOfflineData = async () => {
-    if (!navigator.onLine || localPendingEvents.length === 0) return;
-    for (const event of localPendingEvents) {
-      try {
-        const { error } = await supabase.from('registros_eventos').insert({
-          estudiante_id: event.estudiante_id, docente_id: event.docente_id,
-          tipo: event.tipo, demerito_id: event.demerito_id, redencion_id: event.redencion_id,
-          observaciones: event.observaciones, fecha: event.fecha
-        });
-        if (!error) await db.pendingEvents.delete(event.id!);
-      } catch (e) { console.error(e); }
+  const fetchStudents = async (groupId: string) => {
+    const { data: cloud } = await supabase.from('estudiantes_reporte').select('*').eq('grupo_id', groupId);
+    if (cloud) {
+      const studentIds = cloud.map(s => s.id);
+      const { data: events } = await supabase.from('registros_eventos').select('estudiante_id').eq('tipo', 'reconocimiento').in('estudiante_id', studentIds);
+      const enriched = cloud.map(s => ({
+        ...s,
+        total_reconocimientos: events?.filter(e => e.estudiante_id === s.id).length || 0
+      }));
+      setStudents(enriched);
     }
-    fetchDailyStats();
   };
 
-  const fetchTeacherData = async () => {
-    const teacherId = localStorage.getItem('teacher_id');
-    if (!teacherId) return;
-    try {
-      const { data: config } = await supabase.from('configuracion_sistema').select('limite_demeritos_alerta').single();
-      if (config) setAlertLimit(config.limite_demeritos_alerta);
+  useEffect(() => { fetchData(); }, []);
 
-      const { data: gData } = await supabase.from('docentes_grupos').select('grupos(id, nombre)').eq('docente_id', teacherId);
-      const groups = gData?.map((dg: any) => dg.grupos) || [];
-      setAssignedGroups(groups);
-      if (groups.length > 0 && (!selectedGroupId || !groups.find((g: any) => g.id === selectedGroupId))) {
-        setSelectedGroupId(groups[0].id);
-      }
-    } catch (error) { console.error(error); }
+  const handleAction = (e: React.MouseEvent, student: any, tab: string) => {
+    e.preventDefault(); e.stopPropagation();
+    setSelectedStudent({ id: student.id, name: student.nombre });
+    setModalTab(tab);
+    setIsModalOpen(true);
   };
 
-  const fetchDailyStats = async () => {
-    const today = new Date().toISOString().split('T')[0];
-    const teacherId = localStorage.getItem('teacher_id');
-    try {
-      const { count: dCloud } = await supabase.from('registros_eventos').select('*', { count: 'exact', head: true }).eq('tipo', 'demerito').eq('fecha', today).eq('docente_id', teacherId);
-      const { count: rCloud } = await supabase.from('registros_eventos').select('*', { count: 'exact', head: true }).eq('tipo', 'redencion').eq('fecha', today).eq('docente_id', teacherId);
-      const dLocal = localPendingEvents.filter(e => e.tipo === 'demerito' && e.fecha === today).length;
-      const rLocal = localPendingEvents.filter(e => e.tipo === 'redencion' && e.fecha === today).length;
-      setDailyStats({ demerits: (dCloud || 0) + dLocal, redemptions: (rCloud || 0) + rLocal });
-    } catch (error) { console.error(error); }
-  };
+  const filtered = students.filter(s => s.nombre.toLowerCase().includes(searchTerm.toLowerCase()));
 
-  const fetchStudents = async () => {
-    if (!selectedGroupId) return;
-    setIsLoading(true);
-    try {
-      const from = (page - 1) * rowsPerPage;
-      let result;
-      if (isOnline) {
-        if (search) {
-          // @ts-ignore
-          result = await supabase.rpc('buscar_estudiantes', { termino_busqueda: search.trim() }).select('*', { count: 'exact' } as any).eq('grupo_id', selectedGroupId).range(from, from + rowsPerPage - 1);
-        } else {
-          // @ts-ignore
-          result = await supabase.from('estudiantes_reporte').select('*', { count: 'exact' } as any).eq('grupo_id', selectedGroupId).order('nombre', { ascending: true }).range(from, from + rowsPerPage - 1);
-        }
-        if (result.data) {
-          await db.students.bulkPut(result.data.map((s: any) => ({ id: s.id, nie: s.nie, nombre: s.nombre, grupo_id: s.grupo_id, grupo_nombre: s.grupo_nombre })));
-        }
-      } else {
-        const localData = await db.students.where('grupo_id').equals(selectedGroupId).filter(s => s.nombre.toLowerCase().includes(search.toLowerCase())).offset(from).limit(rowsPerPage).toArray();
-        const localCount = await db.students.where('grupo_id').equals(selectedGroupId).count();
-        result = { data: localData, count: localCount, error: null };
-      }
-      setStudents(result.data || []);
-      setTotalStudents(result.count || 0);
-    } catch (error) { console.error(error); } finally { setIsLoading(false); }
-  };
-
-  useEffect(() => { fetchTeacherData(); fetchDailyStats(); }, [isOnline]);
-  useEffect(() => { if (selectedGroupId) { fetchStudents(); localStorage.setItem('teacher_group_id', selectedGroupId); } }, [page, search, selectedGroupId, isOnline]);
+  if (isLoading) return <DashboardLayout role="docente"><div className="h-[80vh] flex items-center justify-center"><Spinner /></div></DashboardLayout>;
 
   return (
     <DashboardLayout role="docente">
       {notification && <Notification message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
-      
-      <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
-        <div className="xl:col-span-3 space-y-6">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div className="flex items-center gap-4">
-              <div className="size-12 rounded-2xl bg-white shadow-sm flex items-center justify-center">
-                {isOnline ? <RefreshCw size={24} className="text-emerald-500" /> : <CloudOff size={24} className="text-red-500 animate-pulse" />}
-              </div>
-              <div>
-                <h1 className="text-2xl font-black text-gray-900 tracking-tight uppercase leading-none mb-1">Mi Jornada</h1>
-                <Badge color={isOnline ? "success" : "danger"} variant="flat" className="font-black text-[9px] uppercase">{isOnline ? 'Online' : 'Offline'}</Badge>
-              </div>
-            </div>
-            {assignedGroups.length > 0 && (
-              <Select label="Grupo" size="sm" variant="bordered" className="w-full md:max-w-[220px] bg-white shadow-sm" selectedKeys={new Set([selectedGroupId])} onSelectionChange={(keys) => setSelectedGroupId(Array.from(keys)[0] as string)} items={assignedGroups}>
-                {(g) => <SelectItem key={g.id}>{g.nombre}</SelectItem>}
-              </Select>
-            )}
-          </div>
-
-          {pendingCount > 0 && (
-            <Card className="bg-orange-500 text-white border-none shadow-xl shadow-orange-500/20"><CardBody className="flex flex-row items-center justify-between p-5"><div className="flex items-center gap-4 font-bold text-sm"><CloudSync className="animate-spin-slow" /> {pendingCount} registros pendientes.</div>{isOnline && <Button size="sm" className="bg-white text-orange-600 font-black uppercase text-[10px]" onClick={syncOfflineData}>Subir ahora</Button>}</CardBody></Card>
-          )}
-
-          <Input isClearable fullWidth size="lg" placeholder="Alumno o NIE..." startContent={<Search className="text-slate-400" />} value={search} onValueChange={(v) => { setSearch(v); setPage(1); }} variant="bordered" className="bg-white rounded-2xl shadow-sm" />
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {isLoading ? (<div className="col-span-full flex justify-center py-20"><Spinner size="lg" /></div>) : students.map((student) => {
-              const totalFaltas = Number(student.total_demeritos || 0);
-              const isCritical = totalFaltas >= alertLimit;
-              const hasPending = localPendingEvents.some(e => e.estudiante_id === student.id);
-
-              return (
-                <Card key={student.id} className={`border-none shadow-sm hover:shadow-xl transition-all duration-300 bg-white overflow-hidden group ${isCritical ? 'ring-2 ring-red-600 bg-red-50/10' : ''} ${hasPending ? 'ring-2 ring-orange-400' : ''}`}>
-                  <CardBody className="p-6">
-                    <div className="flex items-start gap-4 mb-8">
-                      <div className={`size-14 rounded-2xl flex items-center justify-center font-black text-2xl shadow-lg ${isCritical ? 'bg-red-600 text-white animate-pulse' : 'bg-[#1e3b8a] text-white'}`}>{student.nombre.charAt(0)}</div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h3 className="font-black text-gray-900 uppercase leading-tight text-base truncate">{capitalizeName(student.nombre)}</h3>
-                          {hasPending && <Badge color="warning" variant="solid" size="sm" className="font-black text-[8px]">SYNC</Badge>}
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <p className="text-[10px] font-black text-slate-400 uppercase">NIE: {student.nie}</p>
-                          {isCritical && <Chip color="danger" size="sm" variant="solid" className="font-black text-[8px] h-5" startContent={<AlertTriangle size={10}/>}>EXPULSIÓN</Chip>}
-                        </div>
-                      </div>
-                      <Button isIconOnly variant="light" size="sm" color="primary" onClick={() => navigate(`/student/${student.id}`)} title="Ver Histórico"><Eye size={18} /></Button>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <Button className="bg-red-600 text-white font-black uppercase text-[9px] h-12 rounded-xl" onPress={() => { setSelectedStudent(student); setInitialTab('demeritos'); onOpen(); }}>DEMÉRITO</Button>
-                      <Button className="bg-emerald-600 text-white font-black uppercase text-[9px] h-12 rounded-xl" onPress={() => { setSelectedStudent(student); setInitialTab('redenciones'); onOpen(); }}>REDENCIÓN</Button>
-                    </div>
-                  </CardBody>
-                </Card>
-              );
-            })}
-          </div>
-          {totalStudents > rowsPerPage && (<div className="flex justify-center pt-10 border-t border-gray-100"><Pagination isCompact showControls color="primary" page={page} total={Math.ceil(totalStudents / rowsPerPage)} onChange={setPage} /></div>)}
+      <div className="flex justify-between items-center mb-8 text-slate-900">
+        <div>
+          <h1 className="text-3xl font-black uppercase tracking-tight flex items-center gap-3"><LayoutDashboard className="text-[#1e3b8a]" size={32} /> Panel de Alumnos</h1>
+          <p className="text-gray-500 font-bold uppercase text-[10px] tracking-widest mt-1">Docente: {teacherName}</p>
         </div>
-        
-        <aside className="space-y-6">
-          <Card className="bg-white p-8 rounded-[2.5rem] shadow-sm border-none"><h4 className="font-black text-gray-400 mb-8 flex items-center gap-2 uppercase text-[10px] tracking-[0.3em] border-b border-gray-50 pb-4"><Info size={16} /> Hoy en total</h4><div className="space-y-8"><div className="flex justify-between items-end border-b border-gray-50 pb-6"><div><p className="text-[10px] font-black text-red-400 uppercase tracking-widest mb-1">Faltas</p><p className="text-5xl font-black text-red-600">{dailyStats.demerits}</p></div><ShieldAlert size={40} className="text-red-50" /></div><div className="flex justify-between items-end"><div><p className="text-[10px] font-black text-emerald-400 uppercase tracking-widest mb-1">Méritos</p><p className="text-5xl font-black text-emerald-600">{dailyStats.redemptions}</p></div><BadgeCheck size={40} className="text-emerald-50" /></div></div></Card>
-        </aside>
       </div>
 
-      <EventModal isOpen={isOpen} onOpenChange={onOpenChange} studentId={selectedStudent?.id} studentName={selectedStudent?.nombre} initialTab={initialTab} onSuccess={() => { setNotification({ message: "Registro guardado", type: 'success' }); fetchDailyStats(); }} />
+      <Card className="mb-8 border-none shadow-sm bg-white">
+        <CardBody className="p-4 flex flex-col md:flex-row gap-4 text-slate-900">
+          <Input className="flex-1" placeholder="Buscar alumno..." startContent={<Search size={18} className="text-gray-400" />} value={searchTerm} onValueChange={setSearchTerm} variant="bordered" />
+          <Select className="w-full md:w-64" placeholder="Sección" variant="bordered" selectedKeys={selectedGroupId ? [selectedGroupId] : []} onSelectionChange={(k) => { const id = Array.from(k)[0] as string; setSelectedGroupId(id); localStorage.setItem('teacher_group_id', id); fetchStudents(id); }}>
+            {assignedGroups.map((g) => <SelectItem key={g.id} textValue={g.nombre}>{g.nombre}</SelectItem>)}
+          </Select>
+        </CardBody>
+      </Card>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
+        {filtered.map((s) => {
+          const points = s.balance_puntos || 0;
+          const merits = s.puntos_limpiados || 0;
+          const recognitions = s.total_reconocimientos || 0;
+          let alertMsg = ""; let alertStyle = "";
+          if (points >= 15) { alertMsg = "NO PROMOCIÓN"; alertStyle = "text-red-600 border-red-600"; }
+          else if (points >= 10) { alertMsg = "SUSPENSIÓN"; alertStyle = "text-orange-600 border-orange-600"; }
+          else if (points >= 6) { alertMsg = "AVISO FAMILIA"; alertStyle = "text-orange-500 border-orange-500"; }
+          else if (points >= 3) { alertMsg = "ADVERTENCIA"; alertStyle = "text-blue-600 border-blue-600"; }
+
+          return (
+            <Card key={s.id} className="border-none shadow-sm hover:shadow-2xl transition-all duration-500 bg-white overflow-visible group">
+              <CardBody className="p-0 overflow-visible text-slate-900">
+                <div className={`h-24 relative rounded-t-2xl cursor-pointer ${ points >= 15 ? 'bg-red-600' : (points >= 6 ? 'bg-orange-500' : 'bg-[#1e3b8a]') }`} onClick={() => navigate(`/student/${s.id}`)}>
+                  <div className="absolute top-0 right-0 p-3 opacity-10"><Users size={80} className="text-white transform rotate-12" /></div>
+                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 z-10">
+                    <Avatar name={s.nombre} className="w-20 h-20 text-xl border-4 border-white shadow-xl bg-gray-200" />
+                  </div>
+                  {alertMsg && (
+                    <div className={`absolute -top-3 left-1/2 -translate-x-1/2 bg-white px-4 py-1 rounded-full border-2 shadow-xl font-black text-[9px] z-20 animate-bounce ${alertStyle}`}>
+                      {alertMsg}
+                    </div>
+                  )}
+                </div>
+                <div className="pt-12 px-4 pb-6 text-center">
+                  <h3 className="text-xs font-black uppercase leading-tight line-clamp-3 min-h-[3rem] mb-4 hover:text-blue-700 cursor-pointer" onClick={() => navigate(`/student/${s.id}`)}>{s.nombre}</h3>
+                  
+                  <div className="flex justify-between gap-1 mb-6">
+                    <div className="bg-red-50 p-2 rounded-xl flex-1 border border-red-100 shadow-inner">
+                      <span className="block text-lg font-black text-red-600">{points}</span>
+                      <span className="text-[7px] font-black text-red-400 uppercase">Deméritos</span>
+                    </div>
+                    <div className="bg-emerald-50 p-2 rounded-xl flex-1 border border-emerald-100 shadow-inner">
+                      <span className="block text-lg font-black text-emerald-600">{merits}</span>
+                      <span className="text-[7px] font-black text-emerald-400 uppercase">Redimidos</span>
+                    </div>
+                    <div className="bg-purple-50 p-2 rounded-xl flex-1 border border-purple-100 shadow-inner">
+                      <span className="block text-lg font-black text-purple-600">{recognitions}</span>
+                      <span className="text-[7px] font-black text-purple-400 uppercase">Reconoc.</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 relative z-30">
+                    <Button size="sm" isIconOnly className="bg-red-100 text-red-700 h-10 w-full" onClick={(e) => handleAction(e, s, 'demerito')}><ShieldAlert size={18} /></Button>
+                    <Button size="sm" isIconOnly className="bg-emerald-100 text-emerald-700 h-10 w-full" onClick={(e) => handleAction(e, s, 'redencion')}><History size={18} /></Button>
+                    <Button size="sm" isIconOnly className="bg-purple-100 text-purple-700 h-10 w-full" onClick={(e) => handleAction(e, s, 'reconocimiento')}><Award size={18} /></Button>
+                  </div>
+                </div>
+              </CardBody>
+            </Card>
+          );
+        })}
+      </div>
+      {selectedStudent && <EventModal isOpen={isModalOpen} onOpenChange={setIsModalOpen} studentId={selectedStudent.id} studentName={selectedStudent.name} initialTab={modalTab} onSuccess={() => fetchStudents(selectedGroupId)} />}
     </DashboardLayout>
   );
 }

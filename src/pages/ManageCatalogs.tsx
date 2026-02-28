@@ -1,173 +1,139 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Notification } from '../components/Notification';
 import DashboardLayout from '../layouts/DashboardLayout';
+import { Notification } from '../components/Notification';
 import { 
-  Card, Button, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, 
-  Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure,
-  Tabs, Tab, Chip, Textarea, Spinner
+  Card, CardBody, Button, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, 
+  Tabs, Tab, Chip, Spinner, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure
 } from "@heroui/react";
-import { Plus, Edit3, Trash2, Shield, ShieldAlert, BadgeCheck } from 'lucide-react';
+import { Plus, Trash2, Gavel, HeartHandshake, Award, ShieldAlert, Pencil, AlertCircle } from 'lucide-react';
 
 export default function ManageCatalogs() {
-  const {isOpen, onOpen, onOpenChange} = useDisclosure();
-  const {isOpen: isDeleteOpen, onOpen: onDeleteOpen, onOpenChange: onDeleteOpenChange} = useDisclosure();
-  
-  const [activeTab, setActiveTab] = useState("demeritos");
+  const [activeTab, setActiveTab] = useState("demerito");
   const [items, setItems] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+  const [loading, setLoading] = useState(true);
   
-  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
-  const [selectedItem, setSelectedItem] = useState<any>(null);
-  const [formData, setFormData] = useState({ codigo: '', descripcion: '', puntos_valor: 0 });
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { isOpen, onOpen, onOpenChange } = useDisclosure();
+  const { isOpen: isDelOpen, onOpen: onDelOpen, onOpenChange: onDelOpenChange } = useDisclosure();
+  
+  const [currentItem, setCurrentItem] = useState({ id: '', codigo: '', descripcion: '', puntos_valor: 0 });
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
 
   const fetchItems = async () => {
-    setIsLoading(true);
-    const table = activeTab === 'demeritos' ? 'demeritos_catalogo' : 'redenciones_catalogo';
-    try {
-      const { data } = await supabase.from(table).select('*').order('codigo');
-      setItems(data || []);
-    } catch (error: any) {
-      setNotification({ message: "Error al cargar catálogo", type: 'error' });
-    } finally { setIsLoading(false); }
+    setLoading(true);
+    const table = activeTab === 'demerito' ? 'demeritos_catalogo' : (activeTab === 'redencion' ? 'redenciones_catalogo' : 'reconocimientos_catalogo');
+    const { data } = await supabase.from(table).select('*').order('codigo');
+    setItems(data || []);
+    setLoading(false);
   };
 
   useEffect(() => { fetchItems(); }, [activeTab]);
 
-  const handleCreateClick = () => {
-    setModalMode('create');
-    setSelectedItem(null);
-    setFormData({ codigo: '', descripcion: '', puntos_valor: 0 });
-    onOpen();
-  };
-
-  const handleEditClick = (item: any) => {
-    setModalMode('edit');
-    setSelectedItem(item);
-    setFormData({
-      codigo: item.codigo,
-      descripcion: item.descripcion,
-      puntos_valor: item.puntos_valor
-    });
-    onOpen();
-  };
-
-  const handleSaveItem = async (onClose: () => void) => {
-    if (!formData.codigo || !formData.descripcion) return;
-    
-    setIsSubmitting(true);
-    const table = activeTab === 'demeritos' ? 'demeritos_catalogo' : 'redenciones_catalogo';
+  const handleSave = async (onClose: () => void) => {
     try {
-      if (modalMode === 'create') {
-        const { error } = await supabase.from(table).insert([formData]);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from(table).update(formData).eq('id', selectedItem.id);
-        if (error) throw error;
-      }
+      const table = activeTab === 'demerito' ? 'demeritos_catalogo' : (activeTab === 'redencion' ? 'redenciones_catalogo' : 'reconocimientos_catalogo');
+      const payload = { codigo: currentItem.codigo.toUpperCase(), descripcion: currentItem.descripcion, puntos_valor: parseInt(currentItem.puntos_valor.toString()) };
+
+      if (isEditing) await supabase.from(table).update(payload).eq('id', currentItem.id);
+      else await supabase.from(table).insert(payload);
       
-      setNotification({ message: "Éxito", type: 'success' });
+      setNotification({ message: "Catálogo actualizado", type: 'success' });
       fetchItems();
       onClose();
-    } catch (error: any) {
-      setNotification({ message: "Error: " + error.message, type: 'error' });
-    } finally { setIsSubmitting(false); }
+    } catch (error: any) { setNotification({ message: "Error: " + error.message, type: 'error' }); }
   };
 
-  const confirmDeleteItem = async (onClose: () => void) => {
-    setIsSubmitting(true);
-    const table = activeTab === 'demeritos' ? 'demeritos_catalogo' : 'redenciones_catalogo';
+  const confirmDelete = (id: string) => { setItemToDelete(id); onDelOpen(); };
+
+  const handleDelete = async (onClose: () => void) => {
+    if (!itemToDelete) return;
+    const table = activeTab === 'demerito' ? 'demeritos_catalogo' : (activeTab === 'redencion' ? 'redenciones_catalogo' : 'reconocimientos_catalogo');
     try {
-      const { error } = await supabase.from(table).delete().eq('id', selectedItem.id);
-      if (error) throw error;
-      setNotification({ message: "Eliminado", type: 'success' });
+      await supabase.from(table).delete().eq('id', itemToDelete);
+      setNotification({ message: "Elemento eliminado", type: 'success' });
       fetchItems();
       onClose();
-    } catch (error: any) {
-      setNotification({ message: "Error: " + error.message, type: 'error' });
-    } finally { setIsSubmitting(false); }
+    } catch (error: any) { setNotification({ message: "Error: No se puede eliminar si ya tiene registros asociados.", type: 'error' }); }
+  };
+
+  const handleOpenModal = (item?: any) => {
+    if (item) { setCurrentItem({ id: item.id, codigo: item.codigo, descripcion: item.descripcion, puntos_valor: item.puntos_valor || 0 }); setIsEditing(true); }
+    else { setCurrentItem({ id: '', codigo: '', descripcion: '', puntos_valor: 1 }); setIsEditing(false); }
+    onOpen();
   };
 
   return (
     <DashboardLayout role="admin">
       {notification && <Notification message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
-      
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight flex items-center gap-2">
-            <Shield className="text-[#1e3b8a]" size={32} /> Catálogos
-          </h1>
-          <p className="text-gray-500 font-medium text-sm">Códigos de conducta oficiales</p>
-        </div>
-        <Button color="primary" className="bg-[#1e3b8a] font-bold shadow-lg" startContent={<Plus size={18} />} onPress={handleCreateClick}>Nuevo Código</Button>
+      <div className="flex justify-between items-center mb-8 text-slate-900">
+        <div><h1 className="text-3xl font-black uppercase tracking-tight flex items-center gap-3"><Gavel className="text-[#1e3b8a]" size={32} /> Catálogos</h1></div>
+        <Button color="primary" className="bg-[#1e3b8a] font-black uppercase shadow-lg text-xs" startContent={<Plus size={18} />} onPress={() => handleOpenModal()}>Nuevo Registro</Button>
       </div>
 
-      <Tabs 
-        selectedKey={activeTab} 
-        onSelectionChange={(k) => setActiveTab(k as string)} 
-        variant="light" 
-        color="primary" 
-        className="mb-6"
-        classNames={{
-          tabList: "bg-white p-1 rounded-xl shadow-sm border border-gray-100",
-          cursor: "bg-[#1e3b8a] shadow-md",
-          tab: "h-10",
-          tabContent: "group-data-[selected=true]:text-white font-bold"
-        }}
-      >
-        <Tab key="demeritos" title={<div className="flex items-center gap-2"><ShieldAlert size={16}/> Deméritos</div>} />
-        <Tab key="redenciones" title={<div className="flex items-center gap-2"><BadgeCheck size={16}/> Redenciones</div>} />
-      </Tabs>
+      <div className="space-y-6 text-slate-900">
+        <Tabs aria-label="Catálogos" color={activeTab === "demerito" ? "danger" : (activeTab === "redencion" ? "success" : "secondary")} variant="underlined" selectedKey={activeTab} onSelectionChange={(key) => setActiveTab(key as string)} classNames={{ tabList: "gap-6 border-b", tabContent: "font-black uppercase tracking-widest text-[10px]" }}>
+          <Tab key="demerito" title={<div className="flex items-center space-x-2"><ShieldAlert size={18} /><span>Deméritos</span></div>} />
+          <Tab key="redencion" title={<div className="flex items-center space-x-2"><HeartHandshake size={18} /><span>Redenciones</span></div>} />
+          <Tab key="reconocimiento" title={<div className="flex items-center space-x-2"><Award size={18} /><span>Reconocimientos</span></div>} />
+        </Tabs>
 
-      <Card className="border-none shadow-sm overflow-hidden bg-white">
-        <div className="w-full overflow-x-auto">
-          <Table aria-label="Catalog" shadow="none" classNames={{ wrapper: "min-w-[600px] p-0 shadow-none", th: "bg-gray-50 text-gray-500 font-bold h-12" }}>
-            <TableHeader>
-              <TableColumn>CÓDIGO</TableColumn>
-              <TableColumn>DESCRIPCIÓN</TableColumn>
-              <TableColumn>PUNTOS</TableColumn>
-              <TableColumn align="end">ACCIONES</TableColumn>
-            </TableHeader>
-            <TableBody isLoading={isLoading} loadingContent={<Spinner />}>
-              {items.map((item) => (
-                <TableRow key={item.id} className="hover:bg-gray-50 border-b border-gray-50">
-                  <TableCell><Chip color={activeTab === 'demeritos' ? 'danger' : 'success'} variant="flat" size="sm" className="font-bold">{item.codigo}</Chip></TableCell>
-                  <TableCell className="max-w-md truncate font-medium text-gray-700">{item.descripcion}</TableCell>
-                  <TableCell><span className={`font-black ${activeTab === 'demeritos' ? 'text-red-600' : 'text-emerald-600'}`}>{item.puntos_valor} pts</span></TableCell>
-                  <TableCell>
-                    <div className="flex justify-end gap-1">
-                      <Button isIconOnly variant="light" size="sm" className="text-blue-400 hover:text-blue-600" onPress={() => handleEditClick(item)}><Edit3 size={18} /></Button>
-                      <Button isIconOnly variant="light" size="sm" className="text-red-400 hover:text-red-600" onPress={() => { setSelectedItem(item); onDeleteOpen(); }}><Trash2 size={18} /></Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </Card>
+        <Card className="border-none shadow-sm bg-white">
+          <CardBody className="p-0 text-slate-900">
+            <Table removeWrapper aria-label="Tabla de catálogo">
+              <TableHeader>
+                <TableColumn className="bg-gray-50 font-black text-gray-400 uppercase text-xs">Código</TableColumn>
+                <TableColumn className="bg-gray-50 font-black text-gray-400 uppercase text-xs">Descripción</TableColumn>
+                <TableColumn className="bg-gray-50 font-black text-gray-400 uppercase text-xs">Puntos</TableColumn>
+                <TableColumn className="bg-gray-50 font-black text-gray-400 uppercase text-xs text-right">Acciones</TableColumn>
+              </TableHeader>
+              <TableBody emptyContent={loading ? <Spinner /> : "Sin registros."}>
+                {items.map((item) => (
+                  <TableRow key={item.id} className="border-b border-gray-50 last:border-none">
+                    <TableCell><Chip size="sm" variant="flat" className="font-black" color={activeTab === 'demerito' ? 'danger' : (activeTab === 'redencion' ? 'success' : 'secondary')}>{item.codigo}</Chip></TableCell>
+                    <TableCell className="font-medium text-xs leading-relaxed">{item.descripcion}</TableCell>
+                    <TableCell className="font-black text-xs">{activeTab === 'reconocimiento' ? '-' : `${item.puntos_valor}`}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button isIconOnly size="sm" variant="light" color="primary" onPress={() => handleOpenModal(item)}><Pencil size={16} /></Button>
+                        <Button isIconOnly size="sm" variant="light" color="danger" onPress={() => confirmDelete(item.id)}><Trash2 size={16} /></Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardBody>
+        </Card>
+      </div>
 
-      <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
+      <Modal isOpen={isOpen} onOpenChange={onOpenChange} backdrop="blur">
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="font-black uppercase">{modalMode === 'edit' ? 'Editar' : 'Nuevo'}</ModalHeader>
-              <ModalBody className="space-y-4">
-                <Input label="Código" variant="bordered" value={formData.codigo} onValueChange={(v) => setFormData({...formData, codigo: v})} />
-                <Textarea label="Descripción" variant="bordered" value={formData.descripcion} onValueChange={(v) => setFormData({...formData, descripcion: v})} />
-                <Input label="Puntos" type="number" variant="bordered" value={formData.puntos_valor.toString()} onValueChange={(v) => setFormData({...formData, puntos_valor: Number(v)})} />
-              </ModalBody><ModalFooter><Button variant="light" onPress={onClose}>Cancelar</Button><Button color="primary" className="bg-[#1e3b8a]" isLoading={isSubmitting} onPress={() => handleSaveItem(onClose)}>Guardar</Button></ModalFooter>
+              <ModalHeader className="border-b bg-gray-50 font-black uppercase text-[#1e3b8a]">Ficha de Catálogo</ModalHeader>
+              <ModalBody className="py-6 space-y-4 text-slate-900">
+                <Input label="Código" variant="bordered" value={currentItem.codigo} onValueChange={(v) => setCurrentItem({...currentItem, codigo: v})} />
+                <Input label="Descripción" variant="bordered" value={currentItem.descripcion} onValueChange={(v) => setCurrentItem({...currentItem, descripcion: v})} />
+                {activeTab !== 'reconocimiento' && <Input type="number" label="Puntos" variant="bordered" value={currentItem.puntos_valor.toString()} onValueChange={(v) => setCurrentItem({...currentItem, puntos_valor: Number(v)})} />}
+              </ModalBody>
+              <ModalFooter className="bg-gray-50 border-t p-4"><Button variant="light" onPress={onClose} className="font-bold uppercase text-xs">Cerrar</Button><Button color="primary" onPress={() => handleSave(onClose)} className="bg-[#1e3b8a] font-black uppercase text-xs shadow-lg">Guardar Cambios</Button></ModalFooter>
             </>
           )}
         </ModalContent>
       </Modal>
 
-      <Modal isOpen={isDeleteOpen} onOpenChange={onDeleteOpenChange} backdrop="blur">
-        <ModalContent>{(onClose) => (
-          <><ModalHeader className="text-red-600 font-black">ELIMINAR</ModalHeader><ModalBody>¿Borrar código <strong>{selectedItem?.codigo}</strong>?</ModalBody><ModalFooter><Button variant="light" onPress={onClose}>No</Button><Button color="danger" variant="flat" isLoading={isSubmitting} onPress={() => confirmDeleteItem(onClose)}>Eliminar</Button></ModalFooter></>
-        )}</ModalContent>
+      <Modal isOpen={isDelOpen} onOpenChange={onDelOpenChange} size="sm" backdrop="blur">
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader className="flex flex-col gap-1 text-center"><AlertCircle className="mx-auto text-red-500 mb-2" size={40} /><h2 className="text-xl font-black uppercase text-red-600">¿Eliminar registro?</h2></ModalHeader>
+              <ModalBody className="text-center text-gray-500 font-bold text-sm">Esta acción es irreversible y afectará reportes pasados.</ModalBody>
+              <ModalFooter className="flex justify-center gap-4 p-6"><Button variant="flat" onPress={onClose} className="font-black uppercase text-xs">No</Button><Button color="danger" onPress={() => handleDelete(onClose)} className="font-black uppercase text-xs shadow-lg">Sí, Eliminar</Button></ModalFooter>
+            </>
+          )}
+        </ModalContent>
       </Modal>
     </DashboardLayout>
   );

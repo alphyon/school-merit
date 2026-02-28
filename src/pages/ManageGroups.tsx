@@ -1,132 +1,160 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Notification } from '../components/Notification';
 import DashboardLayout from '../layouts/DashboardLayout';
+import { Notification } from '../components/Notification';
 import { 
-  Card, Button, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, 
-  Input, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Spinner
+  Card, CardBody, Button, Select, SelectItem, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, 
+  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Chip, Spinner
 } from "@heroui/react";
-import { Plus, Trash2, Layers } from 'lucide-react';
+import { Plus, Pencil, Trash2, Layers, AlertCircle } from 'lucide-react';
 
 export default function ManageGroups() {
-  const {isOpen, onOpen, onOpenChange} = useDisclosure();
-  const {isOpen: isDeleteOpen, onOpen: onDeleteOpen, onOpenChange: onDeleteOpenChange} = useDisclosure();
-  const [grupos, setGrupos] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+  const [groups, setGroups] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   
-  const [nombre, setNombre] = useState('');
-  const [selectedGrupo, setSelectedGrupo] = useState<any>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { isOpen, onOpen, onOpenChange } = useDisclosure();
+  const { isOpen: isDelOpen, onOpen: onDelOpen, onOpenChange: onDelOpenChange } = useDisclosure();
+  
+  const [newGroup, setNewGroup] = useState({ id: '', grado: '', seccion: '', turno: 'Matutino' });
+  const [groupToDelete, setGroupToDelete] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
 
-  const fetchGrupos = async () => {
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase.from('grupos').select('*').order('nombre');
-      if (error) throw error;
-      setGrupos(data || []);
-    } catch (error: any) {
-      setNotification({ message: "Error al cargar grupos", type: 'error' });
-    } finally {
-      setIsLoading(false);
-    }
+  const grados = [
+    "Parvularia 4", "Parvularia 5", "Parvularia 6",
+    "1° Grado", "2° Grado", "3° Grado", "4° Grado", "5° Grado", "6° Grado", 
+    "7° Grado", "8° Grado", "9° Grado", 
+    "1er Año Bachillerato", "2do Año Bachillerato", "3er Año Bachillerato"
+  ];
+  const secciones = ["A", "B", "C", "D", "E", "F", "G", "U"];
+  const turnos = ["Matutino", "Vespertino", "Nocturno"];
+
+  const fetchData = async () => {
+    setLoading(true);
+    const { data } = await supabase.from('grupos').select('*').order('grado').order('seccion');
+    setGroups(data || []);
+    setLoading(false);
   };
 
-  useEffect(() => { fetchGrupos(); }, []);
+  useEffect(() => { fetchData(); }, []);
 
-  const handleAddGrupo = async (onClose: () => void) => {
-    if (!nombre) return;
-    setIsSubmitting(true);
+  const generateName = (g: string, s: string, t: string) => {
+    return `${g} "${s}" - ${t}`;
+  };
+
+  const handleSave = async (onClose: () => void) => {
+    if (!newGroup.grado || !newGroup.seccion || !newGroup.turno) {
+      setNotification({ message: "Complete todos los campos", type: 'error' });
+      return;
+    }
+
     try {
-      const { error } = await supabase.from('grupos').insert([{ nombre: nombre.toUpperCase().trim() }]);
-      if (error) throw error;
-      setNotification({ message: "Grupo creado", type: 'success' });
-      fetchGrupos();
+      const nombreGenerado = generateName(newGroup.grado, newGroup.seccion, newGroup.turno);
+      const payload = { grado: newGroup.grado, seccion: newGroup.seccion, turno: newGroup.turno, nombre: nombreGenerado };
+
+      if (isEditing) await supabase.from('grupos').update(payload).eq('id', newGroup.id);
+      else await supabase.from('grupos').insert(payload);
+      
+      setNotification({ message: "Estructura guardada", type: 'success' });
+      fetchData();
       onClose();
-      setNombre('');
-    } catch (error: any) {
-      setNotification({ message: "Error: " + error.message, type: 'error' });
-    } finally {
-      setIsSubmitting(false);
-    }
+    } catch (error: any) { setNotification({ message: "Error: " + error.message, type: 'error' }); }
   };
 
-  const confirmDeleteGrupo = async (onClose: () => void) => {
-    setIsSubmitting(true);
+  const confirmDelete = (id: string) => {
+    setGroupToDelete(id);
+    onDelOpen();
+  };
+
+  const handleDelete = async (onClose: () => void) => {
+    if (!groupToDelete) return;
     try {
-      const { error } = await supabase.from('grupos').delete().eq('id', selectedGrupo.id);
+      const { error } = await supabase.from('grupos').delete().eq('id', groupToDelete);
       if (error) throw error;
       setNotification({ message: "Grupo eliminado", type: 'success' });
-      fetchGrupos();
+      fetchData();
       onClose();
-    } catch (error: any) {
-      setNotification({ message: "Error: " + error.message, type: 'error' });
-    } finally {
-      setIsSubmitting(false);
-    }
+    } catch (error: any) { setNotification({ message: "No se puede eliminar: el grupo tiene alumnos o docentes asignados.", type: 'error' }); }
+  };
+
+  const handleOpenModal = (group?: any) => {
+    if (group) { setNewGroup({ id: group.id, grado: group.grado || '', seccion: group.seccion || '', turno: group.turno || 'Matutino' }); setIsEditing(true); }
+    else { setNewGroup({ id: '', grado: '', seccion: '', turno: 'Matutino' }); setIsEditing(false); }
+    onOpen();
   };
 
   return (
     <DashboardLayout role="admin">
       {notification && <Notification message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
-      
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-        <div>
-          <h1 className="text-3xl font-black text-gray-900 dark:text-white tracking-tight flex items-center gap-2">
-            <Layers className="text-[#1e3b8a]" size={32} /> Grupos Escolares
-          </h1>
-          <p className="text-gray-500 font-medium text-sm">Estructura académica oficial</p>
-        </div>
-        <Button color="primary" className="bg-[#1e3b8a] font-bold shadow-lg" startContent={<Plus size={18} />} onPress={onOpen}>Nuevo Grupo</Button>
+      <div className="flex justify-between items-center mb-8 text-slate-900">
+        <div><h1 className="text-3xl font-black flex items-center gap-2 uppercase"><Layers className="text-[#1e3b8a]" size={32} /> Grupos</h1></div>
+        <Button color="primary" className="bg-[#1e3b8a] font-black uppercase shadow-lg text-xs" startContent={<Plus size={18} />} onPress={() => handleOpenModal()}>Nuevo Grupo</Button>
       </div>
 
-      <Card className="border-none shadow-sm overflow-hidden bg-white">
-        <div className="w-full overflow-x-auto">
-          <Table aria-label="Grupos" shadow="none" classNames={{ wrapper: "min-w-[600px] p-0 shadow-none", th: "bg-gray-50 text-gray-500 font-bold h-12" }}>
+      <Card className="border-none shadow-sm bg-white min-h-[400px]">
+        <CardBody className="p-0">
+          <Table removeWrapper aria-label="Grupos">
             <TableHeader>
-              <TableColumn>NOMBRE DEL GRUPO</TableColumn>
-              <TableColumn align="end">ACCIONES</TableColumn>
+              <TableColumn className="bg-gray-50 font-black text-gray-400 uppercase text-xs">Grado</TableColumn>
+              <TableColumn className="bg-gray-50 font-black text-gray-400 uppercase text-xs">Sección</TableColumn>
+              <TableColumn className="bg-gray-50 font-black text-gray-400 uppercase text-xs">Turno</TableColumn>
+              <TableColumn className="bg-gray-50 font-black text-gray-400 uppercase text-xs text-right">Acciones</TableColumn>
             </TableHeader>
-            <TableBody isLoading={isLoading} loadingContent={<Spinner />}>
-              {grupos.map((g) => (
-                <TableRow key={g.id} className="hover:bg-gray-50 border-b border-gray-50">
-                  <TableCell className="font-bold text-gray-900">{g.nombre}</TableCell>
-                  <TableCell>
-                    <div className="flex justify-end">
-                      <Button isIconOnly variant="light" size="sm" className="text-red-400 hover:text-red-600" onPress={() => { setSelectedGrupo(g); onDeleteOpen(); }}><Trash2 size={18} /></Button>
+            <TableBody emptyContent={loading ? <Spinner /> : "No hay grupos registrados."}>
+              {groups.map((g) => (
+                <TableRow key={g.id} className="border-b border-gray-50 last:border-none hover:bg-gray-50/50">
+                  <TableCell className="font-bold text-gray-700">{g.grado}</TableCell>
+                  <TableCell><Chip size="sm" variant="flat" color="secondary" className="font-black">{g.seccion}</Chip></TableCell>
+                  <TableCell className="text-xs uppercase font-bold text-gray-500">{g.turno}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1">
+                      <Button isIconOnly size="sm" variant="light" color="primary" onPress={() => handleOpenModal(g)}><Pencil size={16} /></Button>
+                      <Button isIconOnly size="sm" variant="light" color="danger" onPress={() => confirmDelete(g.id)}><Trash2 size={16} /></Button>
                     </div>
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-        </div>
+        </CardBody>
       </Card>
 
-      <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
+      <Modal isOpen={isOpen} onOpenChange={onOpenChange} backdrop="blur">
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="font-black uppercase">Nuevo Grupo</ModalHeader>
-              <ModalBody><Input label="Nombre" placeholder="Ej: 9 A" variant="bordered" value={nombre} onValueChange={setNombre} /></ModalBody>
-              <ModalFooter>
-                <Button variant="light" onPress={onClose}>Cancelar</Button>
-                <Button color="primary" className="bg-[#1e3b8a]" isLoading={isSubmitting} onPress={() => handleAddGrupo(onClose)}>Guardar</Button>
+              <ModalHeader className="border-b bg-gray-50"><h2 className="text-lg font-black uppercase text-[#1e3b8a]">{isEditing ? 'Editar' : 'Crear'} Grupo</h2></ModalHeader>
+              <ModalBody className="py-6 space-y-6 text-slate-900">
+                <Select label="Grado Académico" variant="bordered" selectedKeys={newGroup.grado ? [newGroup.grado] : []} onSelectionChange={(keys) => setNewGroup({...newGroup, grado: Array.from(keys)[0] as string})}>
+                  {grados.map((g) => <SelectItem key={g}>{g}</SelectItem>)}
+                </Select>
+                <div className="grid grid-cols-2 gap-4">
+                  <Select label="Sección" variant="bordered" selectedKeys={newGroup.seccion ? [newGroup.seccion] : []} onSelectionChange={(keys) => setNewGroup({...newGroup, seccion: Array.from(keys)[0] as string})}>
+                    {secciones.map((s) => <SelectItem key={s}>{s}</SelectItem>)}
+                  </Select>
+                  <Select label="Turno" variant="bordered" selectedKeys={newGroup.turno ? [newGroup.turno] : []} onSelectionChange={(keys) => setNewGroup({...newGroup, turno: Array.from(keys)[0] as string})}>
+                    {turnos.map((t) => <SelectItem key={t}>{t}</SelectItem>)}
+                  </Select>
+                </div>
+              </ModalBody>
+              <ModalFooter className="bg-gray-50 border-t p-4">
+                <Button variant="light" onPress={onClose} className="font-bold uppercase text-xs">Cancelar</Button>
+                <Button color="primary" onPress={() => handleSave(onClose)} className="bg-[#1e3b8a] font-black uppercase text-xs shadow-lg">Guardar</Button>
               </ModalFooter>
             </>
           )}
         </ModalContent>
       </Modal>
 
-      <Modal isOpen={isDeleteOpen} onOpenChange={onDeleteOpenChange} backdrop="blur">
+      <Modal isOpen={isDelOpen} onOpenChange={onDelOpenChange} size="sm" backdrop="blur">
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="text-red-600 font-black">ELIMINAR</ModalHeader>
-              <ModalBody>¿Borrar el grupo <strong>{selectedGrupo?.nombre}</strong>?</ModalBody>
-              <ModalFooter>
-                <Button variant="light" onPress={onClose}>No</Button>
-                <Button color="danger" variant="flat" isLoading={isSubmitting} onPress={() => confirmDeleteGrupo(onClose)}>Eliminar</Button>
+              <ModalHeader className="flex flex-col gap-1 text-center"><AlertCircle className="mx-auto text-red-500 mb-2" size={40} /><h2 className="text-xl font-black uppercase text-red-600">¿Eliminar Grupo?</h2></ModalHeader>
+              <ModalBody className="text-center text-gray-500 font-bold text-sm leading-relaxed"><p>Asegúrese de que el grupo no tenga alumnos vinculados antes de proceder.</p></ModalBody>
+              <ModalFooter className="flex justify-center gap-4 p-6">
+                <Button variant="flat" onPress={onClose} className="font-black uppercase text-xs">Cancelar</Button>
+                <Button color="danger" onPress={() => handleDelete(onClose)} className="font-black uppercase text-xs shadow-lg">Confirmar</Button>
               </ModalFooter>
             </>
           )}

@@ -3,12 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import DashboardLayout from '../layouts/DashboardLayout';
 import { useReactToPrint } from 'react-to-print';
-import { PrintableReportCard } from '../components/PrintableReportCard';
+import { Instrument001 } from '../components/reports/Instrument001';
 import { Notification } from '../components/Notification';
-import { Card, CardBody, Avatar, Button, Spinner, Pagination, Chip } from "@heroui/react";
+import EventModal from '../components/EventModal';
+import { Card, CardBody, Avatar, Button, Spinner, Pagination, Chip, Tabs, Tab, Select, SelectItem } from "@heroui/react";
 import { 
-  User, School, History, 
-  Gavel, HeartHandshake, Printer, ArrowLeft, BadgeCheck, ShieldAlert
+  Printer, ArrowLeft, BadgeCheck, ShieldAlert, Award, History
 } from 'lucide-react';
 
 export default function StudentProfile() {
@@ -18,25 +18,32 @@ export default function StudentProfile() {
   
   const [student, setStudent] = useState<any>(null);
   const [events, setEvents] = useState<any[]>([]);
+  const [allHistory, setAllHistory] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [userRole, setUserRole] = useState<'admin' | 'docente'>('docente');
-  const [schoolConfig, setSchoolConfig] = useState({ name: '', logo: '' });
+  const [schoolConfig, setSchoolConfig] = useState({ name: '', logo: '', codigoCe: '', departamento: '', municipio: '', distrito: '' });
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
   
   const [page, setPage] = useState(1);
-  const [rowsPerPage] = useState(5);
+  const [rowsPerPage] = useState(10);
   const [totalEventsCount, setTotalEventsCount] = useState(0);
-  const [stats, setStats] = useState({ demerits: 0, redemptions: 0 });
+  const [stats, setStats] = useState({ balance: 0, historico: 0, limpiados: 0 });
+  const [activeTab, setActiveTab] = useState("active");
 
-  const handlePrint = useReactToPrint({
-    contentRef: componentRef,
-  });
+  const [selectedMonth, setSelectedMonth] = useState<string>("all");
+  const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalTab, setModalTab] = useState("demerito");
+  const [preselectedDemeritId, setPreselectedDemeritId] = useState<string | undefined>(undefined);
+
+  const handlePrint = useReactToPrint({ contentRef: componentRef });
 
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const { data: config } = await supabase.from('configuracion_sistema').select('nombre_escuela, logo_url').single();
-      if (config) setSchoolConfig({ name: config.nombre_escuela, logo: config.logo_url });
+      const { data: config } = await supabase.from('configuracion_sistema').select('*').single();
+      if (config) setSchoolConfig({ name: config.nombre_escuela, logo: config.logo_url, codigoCe: config.codigo_ce || '', departamento: config.departamento || '', municipio: config.municipio || '', distrito: config.distrito || '' });
 
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
@@ -44,126 +51,176 @@ export default function StudentProfile() {
         setUserRole(profile?.role || 'docente');
       }
 
-      // Traer datos del reporte (que ahora tiene puntos sumados)
       const { data: studentData, error: sError } = await supabase.from('estudiantes_reporte').select('*').eq('id', id).single();
       if (sError) throw sError;
       setStudent(studentData);
       setStats({ 
-        demerits: studentData.total_puntos_demeritos || 0, 
-        redemptions: studentData.total_puntos_redenciones || 0 
+        balance: studentData.balance_puntos || 0, 
+        historico: studentData.total_historico_faltas || 0,
+        limpiados: studentData.puntos_limpiados || 0
       });
 
-      const { count } = await supabase.from('registros_eventos').select('*', { count: 'exact', head: true }).eq('estudiante_id', id);
-      setTotalEventsCount(count || 0);
+      const { data: fullData } = await supabase.from('registros_eventos').select(`
+        *, demeritos_catalogo(codigo, descripcion), redenciones_catalogo(codigo, descripcion), reconocimientos_catalogo(codigo, descripcion), docentes(nombre)
+      `).eq('estudiante_id', id).order('fecha', { ascending: true });
+      
+      setAllHistory((fullData || []).map(ev => ({
+        ...ev,
+        code: ev.demeritos_catalogo?.codigo || ev.redenciones_catalogo?.codigo || ev.reconocimientos_catalogo?.codigo || '?',
+        loggedBy: ev.docentes?.nombre || 'SISTEMA'
+      })));
 
       const from = (page - 1) * rowsPerPage;
-      const { data: eventsData } = await supabase.from('registros_eventos').select('*, demeritos_catalogo(codigo, descripcion, puntos_valor), redenciones_catalogo(codigo, descripcion, puntos_valor), docentes(nombre)').eq('estudiante_id', id).order('created_at', { ascending: false }).range(from, from + rowsPerPage - 1);
+      const to = from + rowsPerPage - 1;
+      let query = supabase.from('registros_eventos').select(`
+        *,
+        demeritos_catalogo(codigo, descripcion, puntos_valor),
+        redenciones_catalogo(codigo, descripcion, puntos_valor),
+        reconocimientos_catalogo(codigo, descripcion),
+        docentes(nombre),
+        referencia:evento_referencia_id(id, demeritos_catalogo(codigo, descripcion))
+      `, { count: 'exact' }).eq('estudiante_id', id);
       
-      const formattedEvents = (eventsData || []).map((event: any) => {
-        const isDemerito = event.tipo === 'demerito';
-        const catalog = isDemerito ? event.demeritos_catalogo : event.redenciones_catalogo;
+      if (activeTab === 'active') query = query.eq('tipo', 'demerito').eq('estado', 'activo');
+      else if (activeTab === 'redeemed') query = query.eq('tipo', 'redencion');
+      else if (activeTab === 'recognition') query = query.eq('tipo', 'reconocimiento');
+
+      if (selectedMonth !== 'all') {
+        const start = `${selectedYear}-${selectedMonth.padStart(2, '0')}-01`;
+        const end = `${selectedYear}-${selectedMonth.padStart(2, '0')}-31`;
+        query = query.gte('fecha', start).lte('fecha', end);
+      }
+
+      const { data: eventsData, count } = await query.order('fecha', { ascending: false }).range(from, to);
+      
+      setTotalEventsCount(count || 0);
+      setEvents((eventsData || []).map(ev => {
+        const catalog = ev.demeritos_catalogo || ev.reconocimientos_catalogo || ev.redenciones_catalogo;
+        const refData = Array.isArray(ev.referencia) ? ev.referencia[0] : ev.referencia;
         return {
-          id: event.id,
-          type: event.tipo,
-          code: catalog?.codigo || 'N/A',
+          ...ev,
+          code: catalog?.codigo || '?',
           title: catalog?.descripcion || 'Sin descripción',
-          description: event.observaciones,
-          date: new Date(event.created_at).toLocaleString(),
-          points: catalog?.puntos_valor ? (isDemerito ? -catalog.puntos_valor : catalog.puntos_valor) : 0,
-          loggedBy: event.docentes?.nombre || 'Administración',
-          icon: isDemerito ? <Gavel size={20} className="text-red-600" /> : <HeartHandshake size={20} className="text-emerald-600" />
+          pointsValue: catalog?.puntos_valor || 0,
+          refInfo: refData ? `${refData.demeritos_catalogo?.codigo}: ${refData.demeritos_catalogo?.descripcion}` : null
         };
-      });
-      setEvents(formattedEvents);
-    } catch (error: any) {
-      console.error(error);
-    } finally { setIsLoading(false); }
+      }));
+
+    } catch (error: any) { console.error(error); } finally { setIsLoading(false); }
   };
 
-  useEffect(() => { if (id) fetchData(); }, [id, page]);
+  useEffect(() => { if (id) fetchData(); }, [id, page, activeTab, selectedMonth, selectedYear]);
+
+  const handleOpenAction = (tab: string, demeritId?: string) => {
+    setModalTab(tab);
+    setPreselectedDemeritId(demeritId);
+    setIsModalOpen(true);
+  };
+
+  const months = [
+    {key: "all", label: "Todo el Año"}, {key: "1", label: "Enero"}, {key: "2", label: "Febrero"}, {key: "3", label: "Marzo"}, {key: "4", label: "Abril"},
+    {key: "5", label: "Mayo"}, {key: "6", label: "Junio"}, {key: "7", label: "Julio"}, {key: "8", label: "Agosto"},
+    {key: "9", label: "Septiembre"}, {key: "10", label: "Octubre"}, {key: "11", label: "Noviembre"}, {key: "12", label: "Diciembre"}
+  ];
 
   return (
     <DashboardLayout role={userRole}>
       {notification && <Notification message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
       
-      <div className="flex items-center gap-2 mb-8">
-        <Button variant="flat" size="sm" className="font-bold text-gray-500 bg-white" startContent={<ArrowLeft size={18} />} onPress={() => navigate(-1)}>Regresar</Button>
+      <div className="flex justify-between items-center mb-8">
+        <Button variant="flat" size="sm" className="font-bold text-gray-500 bg-white" startContent={<ArrowLeft size={18} />} onPress={() => navigate(-1)}>Volver</Button>
+        <div className="flex gap-2">
+          <Button size="sm" color="danger" variant="flat" className="font-black uppercase text-[10px]" onPress={() => handleOpenAction('demerito')}>Falta</Button>
+          <Button size="sm" color="success" variant="flat" className="font-black uppercase text-[10px]" onPress={() => handleOpenAction('redencion')}>Redención</Button>
+          <Button size="sm" color="secondary" variant="flat" className="font-black uppercase text-[10px]" onPress={() => handleOpenAction('reconocimiento')}>Premio</Button>
+        </div>
       </div>
 
-      {isLoading && page === 1 ? (
-        <div className="py-20 flex justify-center"><Spinner size="lg" label="Cargando perfil..." /></div>
+      {isLoading ? (
+        <div className="py-20 flex justify-center"><Spinner label="Cargando expediente..." /></div>
       ) : (
-        <div className="max-w-5xl mx-auto animate-in fade-in duration-500">
-          <Card className="border-none shadow-sm mb-10 bg-white overflow-hidden">
-            <CardBody className="p-8 lg:p-12">
-              <div className="flex flex-col md:flex-row items-center gap-10">
-                <Avatar className="h-32 w-32 rounded-[2.5rem] border-4 border-gray-50 shadow-xl" name={student?.nombre?.charAt(0)} />
+        <div className="max-w-5xl mx-auto text-slate-900">
+          <Card className="border-none shadow-sm mb-8 bg-white overflow-hidden">
+            <CardBody className="p-8 lg:p-10">
+              <div className="flex flex-col md:flex-row items-center gap-8 mb-10">
+                <Avatar className="h-24 w-24 border-4 border-gray-50 shadow-lg" name={student?.nombre} />
                 <div className="flex-1 text-center md:text-left">
-                  <h1 className="text-3xl lg:text-4xl font-black text-gray-900 uppercase tracking-tighter mb-2">{student?.nombre}</h1>
-                  <div className="flex flex-wrap justify-center md:justify-start gap-6 text-gray-400 font-bold text-xs uppercase tracking-widest">
-                    <p className="flex items-center gap-2 bg-gray-50 px-3 py-1 rounded-full"><User size={14} className="text-[#1e3b8a]"/> NIE: {student?.nie}</p>
-                    <p className="flex items-center gap-2 bg-gray-50 px-3 py-1 rounded-full"><School size={14} className="text-[#1e3b8a]"/> {student?.grupo_nombre}</p>
-                  </div>
+                  <h1 className="text-2xl font-black uppercase tracking-tighter mb-1">{student?.nombre}</h1>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">NIE: {student?.nie} | {student?.grupo_nombre}</p>
+                  {stats.balance >= 15 && <Chip color="danger" variant="solid" className="font-black animate-pulse text-[10px]">NO PROMOCIÓN</Chip>}
+                  {stats.balance >= 10 && stats.balance < 15 && <Chip color="warning" variant="solid" className="font-black text-[10px]">SUSPENSIÓN</Chip>}
+                  {stats.balance >= 6 && stats.balance < 10 && <Chip color="warning" variant="flat" className="font-black text-[10px]">AVISO FAMILIA</Chip>}
+                  {stats.balance >= 3 && stats.balance < 6 && <Chip color="primary" variant="flat" className="font-black text-[10px]">ADVERTENCIA</Chip>}
                 </div>
-                <Button color="primary" className="bg-[#1e3b8a] font-black uppercase text-xs h-14 px-10 shadow-xl shadow-blue-900/20" startContent={<Printer size={20} />} onPress={() => handlePrint()}>Imprimir Boleta</Button>
+                <Button color="primary" className="bg-[#1e3b8a] font-black uppercase text-[10px] h-12 px-8" startContent={<Printer size={18} />} onPress={() => handlePrint()}>Imprimir</Button>
               </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-12">
-                <div className="p-8 rounded-[2rem] bg-red-50 border border-red-100 flex justify-between items-center">
-                  <div><p className="text-red-400 text-[10px] font-black uppercase tracking-widest mb-1">Puntos de Demérito</p><p className="text-5xl font-black text-red-600 tracking-tighter">{stats.demerits}</p></div>
-                  <ShieldAlert size={48} className="text-red-200" />
-                </div>
-                <div className="p-8 rounded-[2rem] bg-emerald-50 border border-emerald-100 flex justify-between items-center">
-                  <div><p className="text-emerald-400 text-[10px] font-black uppercase tracking-widest mb-1">Puntos de Redención</p><p className="text-5xl font-black text-emerald-600 tracking-tighter">{stats.redemptions}</p></div>
-                  <BadgeCheck size={48} className="text-emerald-200" />
-                </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100 text-center"><p className="text-gray-400 text-[9px] font-black uppercase mb-1">Histórico</p><p className="text-3xl font-black text-gray-600">{stats.historico}</p></div>
+                <div className="p-5 rounded-2xl bg-emerald-50 border border-emerald-100 text-center"><p className="text-emerald-400 text-[9px] font-black uppercase mb-1">Redimidos</p><p className="text-3xl font-black text-emerald-600">+{stats.limpiados}</p></div>
+                <div className="p-5 rounded-2xl bg-red-50 border-2 border-red-200 text-center"><p className="text-red-400 text-[9px] font-black uppercase mb-1">Balance Actual</p><p className="text-3xl font-black text-red-600">{stats.balance}</p></div>
               </div>
             </CardBody>
           </Card>
 
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-xl font-black flex items-center gap-3 uppercase tracking-tight text-gray-900"><History size={28} className="text-[#1e3b8a]" /> Historial Conductual</h2>
-            <Chip variant="flat" color="primary" className="font-black text-[10px] uppercase">Eventos: {totalEventsCount}</Chip>
-          </div>
+          <Card className="mb-8 border-none shadow-sm bg-white">
+            <CardBody className="p-4 flex flex-col md:flex-row gap-4 items-end">
+              <div className="flex-1"><h2 className="text-sm font-black uppercase text-gray-900 flex items-center gap-2 mb-2"><History size={18} className="text-[#1e3b8a]" /> Historial</h2></div>
+              <div className="w-full md:w-48"><Select label="Mes" size="sm" variant="bordered" selectedKeys={[selectedMonth]} onSelectionChange={(k) => setSelectedMonth(Array.from(k)[0] as string)}>{months.map((m) => <SelectItem key={m.key}>{m.label}</SelectItem>)}</Select></div>
+              <div className="w-full md:w-32"><Select label="Año" size="sm" variant="bordered" selectedKeys={[selectedYear]} onSelectionChange={(k) => setSelectedYear(Array.from(k)[0] as string)}>{["2024", "2025", "2026"].map((y) => <SelectItem key={y}>{y}</SelectItem>)}</Select></div>
+            </CardBody>
+          </Card>
 
-          <div className="flex flex-col gap-4 mb-20 relative">
-            {events.length === 0 ? (
-              <div className="text-center py-24 bg-white rounded-[2rem] border-2 border-dashed border-slate-200 text-slate-400 font-bold uppercase tracking-widest text-xs">Sin registros</div>
-            ) : (
-              <>
-                {events.map((event) => (
-                  <Card key={event.id} className="border-none shadow-sm bg-white overflow-hidden hover:shadow-md transition-shadow">
-                    <div className={`absolute left-0 top-0 bottom-0 w-2 ${event.type === 'demerito' ? 'bg-red-500' : 'bg-emerald-500'}`}></div>
-                    <CardBody className="p-6">
-                      <div className="flex flex-col md:flex-row justify-between gap-6">
-                        <div className="flex gap-5">
-                          <div className={`size-14 rounded-2xl flex items-center justify-center flex-shrink-0 ${event.type === 'demerito' ? 'bg-red-50 text-red-500' : 'bg-emerald-50 text-emerald-500'}`}>{event.icon}</div>
-                          <div>
-                            <div className="flex items-center gap-3 mb-2">
-                              <Chip color={event.type === 'demerito' ? 'danger' : 'success'} variant="flat" size="sm" className="font-black uppercase text-[9px] px-2">{event.type}</Chip>
-                              <span className="text-gray-400 text-[10px] font-bold uppercase tracking-widest">{event.date}</span>
-                            </div>
-                            <h3 className="text-gray-900 font-black text-lg mb-1">{event.code}: {event.title}</h3>
-                            <p className="text-gray-500 text-sm font-medium leading-relaxed">{event.description || 'Sin observaciones'}</p>
-                            <p className="mt-4 text-[9px] font-black text-gray-400 uppercase tracking-[0.2em]">Por: <span className="text-[#1e3b8a]">{event.loggedBy}</span></p>
-                          </div>
+          <Tabs selectedKey={activeTab} onSelectionChange={(k) => { setActiveTab(k as string); setPage(1); }} variant="underlined" color="primary" classNames={{ tabList: "mb-6", tabContent: "font-black uppercase text-[10px]" }}>
+            <Tab key="active" title="Pendientes" />
+            <Tab key="redeemed" title="Redenciones" />
+            <Tab key="recognition" title="Premios" />
+            <Tab key="all" title="Todo" />
+          </Tabs>
+
+          <div className="flex flex-col gap-4 mb-20">
+            {events.map((ev) => {
+              const isDem = ev.tipo === 'demerito';
+              const isRed = ev.tipo === 'redencion';
+              const isRec = ev.tipo === 'reconocimiento';
+              return (
+                <Card key={ev.id} className={`border-none shadow-sm bg-white overflow-hidden ${ev.estado === 'redimido' ? 'opacity-50 grayscale' : ''}`}>
+                  <CardBody className="p-6">
+                    <div className="flex justify-between items-start gap-4">
+                      <div className="flex gap-4">
+                        <div className={`p-3 rounded-2xl ${isDem ? (ev.estado === 'redimido' ? 'bg-gray-100 text-gray-400' : 'bg-red-50 text-red-600') : (isRec ? 'bg-purple-50 text-purple-600' : 'bg-emerald-50 text-emerald-600')}`}>
+                          {isDem ? <ShieldAlert size={20}/> : (isRec ? <Award size={20}/> : <BadgeCheck size={20}/>)}
                         </div>
-                        <div className={`text-3xl font-black ${event.type === 'demerito' ? 'text-red-600' : 'text-emerald-600'} flex items-center`}>
-                          {event.points > 0 ? `+${event.points}` : event.points}
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-[10px] font-black text-gray-400 uppercase">{new Date(ev.fecha).toLocaleDateString()}</span>
+                            {isRed && <Chip size="sm" variant="flat" color="primary" className="h-4 text-[8px] font-black uppercase">Redención Aplicada</Chip>}
+                            {isDem && ev.estado === 'redimido' && <Chip size="sm" variant="flat" color="success" className="h-4 text-[8px] font-black uppercase">Redimido</Chip>}
+                          </div>
+                          <h3 className="font-black text-gray-900 uppercase text-sm">{ev.code}: {ev.title}</h3>
+                          {isRed && ev.refInfo && <p className="text-[9px] font-bold text-gray-500 uppercase italic mt-1">Limpió falta: {ev.refInfo}</p>}
+                          <p className="text-gray-500 text-xs mt-1 italic">{ev.observaciones || 'Sin detalles'}</p>
+                          {isDem && ev.estado === 'activo' && (
+                            <Button size="sm" color="success" variant="flat" className="mt-3 font-black text-[9px] h-7 uppercase" onPress={() => handleOpenAction('redencion', ev.id)}>Redimir ahora</Button>
+                          )}
                         </div>
                       </div>
-                    </CardBody>
-                  </Card>
-                ))}
-                <div className="flex justify-center mt-10"><Pagination isCompact showControls color="primary" page={page} total={Math.ceil(totalEventsCount / rowsPerPage)} onChange={setPage} /></div>
-              </>
-            )}
+                      <div className={`text-xl font-black ${isDem ? (ev.estado === 'redimido' ? 'text-gray-300' : 'text-red-600') : 'text-emerald-600'}`}>
+                        {ev.pointsValue !== 0 && `${isDem ? '-' : '+'}${ev.pointsValue}`}
+                      </div>
+                    </div>
+                  </CardBody>
+                </Card>
+              );
+            })}
+            <div className="flex justify-center mt-6"><Pagination isCompact showControls color="primary" page={page} total={Math.ceil(totalEventsCount / rowsPerPage)} onChange={setPage} /></div>
           </div>
         </div>
       )}
 
+      <EventModal isOpen={isModalOpen} onOpenChange={setIsModalOpen} studentId={id} studentName={student?.nombre} initialTab={modalTab} initialDemeritId={preselectedDemeritId} onSuccess={fetchData} />
+      
       <div style={{ display: 'none' }}>
-        <PrintableReportCard ref={componentRef} schoolName={schoolConfig.name} logoUrl={schoolConfig.logo} student={{ nombre: student?.nombre, nie: student?.nie, grado: student?.grupo_nombre }} events={events} />
+        <Instrument001 ref={componentRef} schoolName={schoolConfig.name} logoUrl={schoolConfig.logo} config={schoolConfig} student={{ nombre: student?.nombre, nie: student?.nie, grado: student?.grupo_nombre, genero: student?.genero }} events={allHistory} />
       </div>
     </DashboardLayout>
   );

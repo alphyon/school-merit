@@ -18,19 +18,22 @@ export interface LocalCatalogItem {
   codigo: string;
   descripcion: string;
   puntos_valor: number;
-  tipo: 'demerito' | 'redencion';
+  tipo: 'demerito' | 'redencion' | 'reconocimiento';
 }
 
 export interface PendingEvent {
   id?: number;
   estudiante_id: string;
   docente_id: string;
-  tipo: 'demerito' | 'redencion';
+  tipo: 'demerito' | 'redencion' | 'reconocimiento';
   demerito_id: string | null;
   redencion_id: string | null;
+  reconocimiento_id?: string | null;
+  evento_referencia_id?: string | null;
   observaciones: string;
   fecha: string;
   sync_status: 'pending' | 'syncing' | 'error';
+  estado?: 'activo' | 'redimido';
 }
 
 export class MyDatabase extends Dexie {
@@ -41,7 +44,7 @@ export class MyDatabase extends Dexie {
 
   constructor() {
     super('DemeritosOfflineDB');
-    this.version(2).stores({ // Subimos versión para aplicar cambios
+    this.version(3).stores({ 
       students: 'id, nie, nombre, grupo_id',
       groups: 'id, nombre',
       catalog: 'id, codigo, tipo',

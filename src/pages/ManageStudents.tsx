@@ -1,243 +1,206 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import DashboardLayout from '../layouts/DashboardLayout';
 import { Notification } from '../components/Notification';
-import { capitalizeName } from '../utils/formatUtils';
-import { importStudentsFromCSV } from '../utils/importStudents';
 import { 
-  Card, Button, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, 
-  User, Badge, Input, Pagination, Select, SelectItem,
-  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Spinner, Chip
+  Card, CardBody, Button, Input, Select, SelectItem, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, 
+  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Pagination, Spinner, Chip
 } from "@heroui/react";
-import { Search, Edit3, Trash2, FileUp, GraduationCap, Plus, Eye, AlertTriangle } from 'lucide-react';
+import { Plus, Search, Pencil, Trash2, Users, FileSpreadsheet, Filter, Eye, AlertCircle } from 'lucide-react';
+import { importStudentsFromCSV, type ImportResult } from '../utils/importStudents';
 
 export default function ManageStudents() {
-  const {isOpen, onOpen, onOpenChange} = useDisclosure();
-  const {isOpen: isDeleteOpen, onOpen: onDeleteOpen, onOpenChange: onDeleteOpenChange} = useDisclosure();
-  const [search, setSearch] = useState('');
-  const [isImporting, setIsImporting] = useState(false);
-  const [studentsList, setStudentsList] = useState<any[]>([]);
-  const [grupos, setGrupos] = useState<any[]>([]);
-  const [selectedGrupo, setSelectedGrupo] = useState<string>("all");
-  const [isLoading, setIsLoading] = useState(true);
-  const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
-  const [page, setPage] = useState(1);
-  const [rowsPerPage] = useState(10);
-  const [totalStudents, setTotalStudents] = useState(0);
-  const [alertLimit, setAlertLimit] = useState(30);
-  
-  const [selectedStudent, setSelectedStudent] = useState<any>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [formData, setFormData] = useState({ nombre: '', nie: '', grupo_id: '' });
-  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
-
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  const [students, setStudents] = useState<any[]>([]);
+  const [groups, setGroups] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedGroupFilter, setSelectedGroupFilter] = useState<string>("");
+  const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>("activo");
+  const [page, setPage] = useState(1);
+  
+  const { isOpen, onOpen, onOpenChange } = useDisclosure();
+  const { isOpen: isDelOpen, onOpen: onDelOpen, onOpenChange: onDelOpenChange } = useDisclosure();
+  
+  const [newStudent, setNewStudent] = useState({ id: '', nombre: '', nie: '', grupo_id: '', genero: '', turno: 'Matutino', estado: 'activo' });
+  const [studentToDelete, setStudentToDelete] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
 
-  const fetchGrupos = async () => {
-    const { data } = await supabase.from('grupos').select('*').order('nombre');
-    setGrupos(data || []);
-  };
-
-  const fetchStudents = async () => {
-    setIsLoading(true);
+  const fetchData = async () => {
+    setLoading(true);
     try {
-      const { data: config } = await supabase.from('configuracion_sistema').select('limite_demeritos_alerta').single();
-      if (config) setAlertLimit(config.limite_demeritos_alerta);
-
-      const from = (page - 1) * rowsPerPage;
-      let result;
-      if (search) {
-        // @ts-ignore
-        result = await supabase.rpc('buscar_estudiantes', { termino_busqueda: search.trim() }).select('*', { count: 'exact' }).range(from, from + rowsPerPage - 1);
-      } else {
-        let query = supabase.from('estudiantes_reporte').select('*', { count: 'exact' } as any);
-        if (selectedGrupo !== "all") query = query.eq('grupo_id', selectedGrupo);
-        result = await query.order('nombre', { ascending: true }).range(from, from + rowsPerPage - 1);
-      }
-
-      if (result.error) throw result.error;
-      setStudentsList(result.data || []);
-      setTotalStudents(result.count || 0);
-    } catch (error: any) {
-      setNotification({ message: "Error: " + error.message, type: 'error' });
-    } finally {
-      setIsLoading(false);
-    }
+      const { data: gData } = await supabase.from('grupos').select('*').order('nombre');
+      setGroups(gData || []);
+      
+      let query = supabase.from('estudiantes').select('*, grupos(nombre)').order('nombre');
+      if (searchTerm) query = query.or(`nombre.ilike.%${searchTerm}%,nie.ilike.%${searchTerm}%`);
+      if (selectedGroupFilter) query = query.eq('grupo_id', selectedGroupFilter);
+      if (selectedStatusFilter) query = query.eq('estado', selectedStatusFilter);
+      
+      const { data: sData } = await query;
+      setStudents(sData || []);
+    } catch (error) { console.error(error); } finally { setLoading(false); }
   };
 
-  useEffect(() => { fetchGrupos(); }, []);
-  useEffect(() => { fetchStudents(); }, [page, search, selectedGrupo]);
+  useEffect(() => { fetchData(); }, [searchTerm, selectedGroupFilter, selectedStatusFilter]);
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
+  const handleSave = async (onClose: () => void) => {
+    try {
+      const payload = { nombre: newStudent.nombre.toUpperCase(), nie: newStudent.nie, grupo_id: newStudent.grupo_id, genero: newStudent.genero, turno: newStudent.turno, estado: newStudent.estado };
+      if (isEditing) await supabase.from('estudiantes').update(payload).eq('id', newStudent.id);
+      else await supabase.from('estudiantes').insert(payload);
+      setNotification({ message: "Guardado exitosamente", type: 'success' });
+      fetchData();
+      onClose();
+    } catch (error: any) { setNotification({ message: "Error: " + error.message, type: 'error' }); }
+  };
+
+  const confirmDelete = (id: string) => { setStudentToDelete(id); onDelOpen(); };
+
+  const handleDelete = async (onClose: () => void) => {
+    if (!studentToDelete) return;
+    try {
+      await supabase.from('estudiantes').delete().eq('id', studentToDelete);
+      setNotification({ message: "Estudiante eliminado", type: 'success' });
+      fetchData();
+      onClose();
+    } catch (error: any) { setNotification({ message: "Error: " + error.message, type: 'error' }); }
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (!file) return;
     setIsImporting(true);
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      const content = e.target?.result as string;
-      try {
-        await importStudentsFromCSV(content);
-        setNotification({ message: "Éxito!", type: 'success' });
-        fetchStudents(); 
-      } catch (error: any) {
-        setNotification({ message: "Error: " + error.message, type: 'error' });
-      } finally {
-        setIsImporting(false);
-        if (fileInputRef.current) fileInputRef.current.value = '';
-      }
-    };
-    reader.readAsText(file);
+    try {
+      const result: ImportResult = await importStudentsFromCSV(file);
+      if (result.success) { setNotification({ message: `Importación exitosa: ${result.count} alumnos.`, type: 'success' }); fetchData(); }
+      else setNotification({ message: "Error en CSV: " + result.error, type: 'error' });
+    } catch (err: any) { setNotification({ message: "Fallo: " + err.message, type: 'error' }); } finally { setIsImporting(false); }
   };
 
-  const handleCreateClick = () => {
-    setModalMode('create');
-    setSelectedStudent(null);
-    setFormData({ nombre: '', nie: '', grupo_id: '' });
+  const handleOpenModal = (student?: any) => {
+    if (student) { setNewStudent({ ...student }); setIsEditing(true); }
+    else { setNewStudent({ id: '', nombre: '', nie: '', grupo_id: '', genero: '', turno: 'Matutino', estado: 'activo' }); setIsEditing(false); }
     onOpen();
   };
 
-  const handleEditClick = (student: any) => {
-    setModalMode('edit');
-    setSelectedStudent(student);
-    setFormData({ nombre: student.nombre, nie: student.nie, grupo_id: student.grupo_id || '' });
-    onOpen();
-  };
-
-  const handleSaveStudent = async (onClose: () => void) => {
-    if (!formData.nombre || !formData.nie || !formData.grupo_id) {
-      setNotification({ message: "Llene todos los campos", type: 'error' });
-      return;
-    }
-    setIsSubmitting(true);
-    try {
-      const selectedGroupObj = grupos.find(g => g.id === formData.grupo_id);
-      const studentData = {
-        nombre: formData.nombre.toUpperCase().trim(),
-        nie: formData.nie.trim(),
-        grupo_id: formData.grupo_id,
-        grado: selectedGroupObj?.grado || '',
-        seccion: selectedGroupObj?.seccion || ''
-      };
-      if (modalMode === 'edit') {
-        const { error } = await supabase.from('estudiantes').update(studentData).eq('id', selectedStudent.id);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from('estudiantes').insert([studentData]);
-        if (error) throw error;
-      }
-      fetchStudents();
-      onClose();
-    } catch (error: any) {
-      setNotification({ message: "Error: " + error.message, type: 'error' });
-    } finally { setIsSubmitting(false); }
-  };
-
-  const handleDeleteClick = (student: any) => {
-    setSelectedStudent(student);
-    onDeleteOpen();
-  };
-
-  const confirmDelete = async (onClose: () => void) => {
-    setIsSubmitting(true);
-    try {
-      const { error } = await supabase.from('estudiantes').delete().eq('id', selectedStudent.id);
-      if (error) throw error;
-      setNotification({ message: "Eliminado", type: 'success' });
-      fetchStudents();
-      onClose();
-    } catch (error: any) {
-      setNotification({ message: "Error: " + error.message, type: 'error' });
-    } finally { setIsSubmitting(false); }
-  };
+  const itemsPerPage = 15;
+  const paginatedStudents = students.slice((page - 1) * itemsPerPage, page * itemsPerPage);
 
   return (
     <DashboardLayout role="admin">
       {notification && <Notification message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-        <h2 className="text-2xl md:text-3xl font-black tracking-tight flex items-center gap-2 uppercase"><GraduationCap className="text-[#1e3b8a]" size={32} /> Estudiantes</h2>
-        <div className="flex gap-2 w-full md:w-auto">
-          <Button color="primary" className="bg-[#1e3b8a] font-black uppercase text-[10px] h-12" startContent={<Plus size={18} />} onPress={handleCreateClick}>Nuevo Alumno</Button>
-          <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".csv" className="hidden" />
-          <Button variant="bordered" className="bg-white border-gray-200" startContent={<FileUp size={18} />} isLoading={isImporting} onPress={() => fileInputRef.current?.click()}>Importar CSV</Button>
+      
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 text-slate-900">
+        <div><h1 className="text-3xl font-black uppercase tracking-tight flex items-center gap-2"><Users className="text-[#1e3b8a]" size={32} /> Estudiantes</h1></div>
+        <div className="flex gap-2">
+          <label className="cursor-pointer">
+            <input type="file" accept=".csv" className="hidden" onChange={handleFileUpload} disabled={isImporting} />
+            <Button as="span" variant="flat" color="success" isLoading={isImporting} startContent={<FileSpreadsheet size={18} />} className="font-black uppercase text-xs">Cargar CSV</Button>
+          </label>
+          <Button color="primary" className="bg-[#1e3b8a] font-black uppercase shadow-lg text-xs" startContent={<Plus size={18} />} onPress={() => handleOpenModal()}>Nuevo Alumno</Button>
         </div>
       </div>
 
-      <Card className="border-none shadow-sm overflow-hidden bg-white">
-        <div className="p-4 md:p-6 border-b border-gray-100 flex flex-col lg:flex-row md:items-center justify-between gap-4">
-          <div className="flex flex-col md:flex-row flex-1 gap-3 w-full">
-            <Input className="w-full md:max-w-xs" placeholder="Buscar..." startContent={<Search size={16} className="text-slate-400" />} size="md" variant="bordered" value={search} onValueChange={(val) => { setSearch(val); setPage(1); }} />
-            <Select 
-              className="w-full md:max-w-xs" 
-              size="md" 
-              placeholder="Grupo" 
-              selectedKeys={new Set([selectedGrupo])} 
-              onSelectionChange={(keys) => { setSelectedGrupo(Array.from(keys)[0] as string); setPage(1); }}
-              items={[{id: 'all', nombre: 'Todos'}, ...grupos]}
-            >
-              {(item) => <SelectItem key={item.id}>{item.nombre}</SelectItem>}
-            </Select>
-          </div>
-          <Chip variant="flat" color="primary" className="font-black uppercase text-[10px] tracking-widest">Total: {totalStudents}</Chip>
-        </div>
-        
-        <div className="overflow-x-auto">
-          <Table 
-            aria-label="Students" 
-            shadow="none"
-            classNames={{ wrapper: "min-w-[800px] p-0 shadow-none", th: "bg-gray-50 text-gray-500 font-bold h-12" }}
+      <Card className="mb-6 border-none shadow-sm bg-white">
+        <CardBody className="p-4 flex flex-col md:flex-row gap-4">
+          <Input className="flex-1" startContent={<Search size={18} className="text-gray-400" />} placeholder="Buscar por NIE o Nombre..." variant="bordered" value={searchTerm} onValueChange={setSearchTerm} />
+          <Select 
+            aria-label="Estado"
+            className="w-full md:w-48" placeholder="Estado" variant="bordered" 
+            selectedKeys={[selectedStatusFilter]} onSelectionChange={(keys) => setSelectedStatusFilter(Array.from(keys)[0] as string)}
           >
-            <TableHeader><TableColumn>ESTUDIANTE</TableColumn><TableColumn>NIE</TableColumn><TableColumn>GRUPO</TableColumn><TableColumn>FALTAS</TableColumn><TableColumn align="end">ACCIONES</TableColumn></TableHeader>
-            <TableBody isLoading={isLoading} loadingContent={<Spinner />}>
-              {studentsList.map((student) => {
-                const isAlert = student.total_demeritos >= alertLimit;
-                return (
-                  <TableRow key={student.id} className={`${isAlert ? "bg-red-50/50" : "hover:bg-gray-50"} border-b border-gray-50`}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <User name={capitalizeName(student.nombre)} avatarProps={{ name: student.nombre.charAt(0), size: "sm" }} description={student.nie} />
-                        {isAlert && <AlertTriangle size={16} className="text-red-600 animate-pulse" />}
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-mono text-xs text-gray-500">{student.nie}</TableCell>
-                    <TableCell><Badge color="primary" variant="flat" size="sm" className="font-bold">{student.grupo_nombre || student.grado}</Badge></TableCell>
-                    <TableCell>
-                      <Chip color={isAlert ? "danger" : "default"} variant={isAlert ? "solid" : "flat"} size="sm" className="font-black min-w-[45px] text-center">
-                        {student.total_demeritos || 0}
-                      </Chip>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex justify-end gap-1">
-                        <Button isIconOnly variant="light" size="sm" color="success" onClick={() => navigate(`/student/${student.id}`)}><Eye size={18} /></Button>
-                        <Button isIconOnly variant="light" size="sm" color="primary" onClick={() => handleEditClick(student)}><Edit3 size={18} /></Button>
-                        <Button isIconOnly variant="light" size="sm" color="danger" onClick={() => handleDeleteClick(student)}><Trash2 size={18} /></Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
-        <div className="flex justify-center py-6 border-t border-gray-100"><Pagination isCompact showControls color="primary" page={page} total={Math.ceil(totalStudents / rowsPerPage)} onChange={setPage} /></div>
+            <SelectItem key="activo" textValue="Activos">Solo Activos</SelectItem>
+            <SelectItem key="inactivo" textValue="Inactivos">Desmatriculados</SelectItem>
+          </Select>
+          <Select 
+            aria-label="Grupo"
+            className="w-full md:w-64" placeholder="Filtrar por Grupo" startContent={<Filter size={16} />} variant="bordered" 
+            selectedKeys={selectedGroupFilter ? [selectedGroupFilter] : []} onSelectionChange={(keys) => setSelectedGroupFilter(Array.from(keys)[0] as string)}
+            items={[{id: "", nombre: "Todos los Grupos"}, ...groups]}
+          >
+            {(g) => <SelectItem key={g.id} textValue={g.nombre}>{g.nombre}</SelectItem>}
+          </Select>
+        </CardBody>
       </Card>
 
-      <Modal isOpen={isOpen} onOpenChange={onOpenChange} placement="center">
-        <ModalContent>{(onClose) => (
-          <><ModalHeader className="font-black uppercase">{modalMode === 'edit' ? 'Editar' : 'Registrar'}</ModalHeader><ModalBody className="space-y-4">
-            <Input label="Nombre" variant="bordered" value={formData.nombre} onValueChange={(val) => setFormData({...formData, nombre: val})} />
-            <Input label="NIE" variant="bordered" value={formData.nie} onValueChange={(val) => setFormData({...formData, nie: val})} />
-            <Select label="Grupo" variant="bordered" selectedKeys={formData.grupo_id ? new Set([formData.grupo_id]) : new Set()} onSelectionChange={(keys) => setFormData({...formData, grupo_id: Array.from(keys)[0] as string})} items={grupos}>
-              {(g) => <SelectItem key={g.id}>{g.nombre}</SelectItem>}
-            </Select></ModalBody><ModalFooter><Button variant="light" onPress={onClose}>Cerrar</Button><Button color="primary" className="bg-[#1e3b8a] font-black uppercase text-xs h-12 px-8" isLoading={isSubmitting} onPress={() => handleSaveStudent(onClose)}>Guardar</Button></ModalFooter></>
-        )}</ModalContent>
+      <Card className="border-none shadow-sm bg-white min-h-[400px]">
+        <CardBody className="p-0 text-slate-900 text-xs">
+          <Table removeWrapper aria-label="Estudiantes">
+            <TableHeader>
+              <TableColumn className="bg-gray-50 font-black text-gray-400 uppercase">NIE</TableColumn>
+              <TableColumn className="bg-gray-50 font-black text-gray-400 uppercase">Nombre Completo</TableColumn>
+              <TableColumn className="bg-gray-50 font-black text-gray-400 uppercase">Estado</TableColumn>
+              <TableColumn className="bg-gray-50 font-black text-gray-400 uppercase text-right">Acciones</TableColumn>
+            </TableHeader>
+            <TableBody emptyContent={loading ? <Spinner /> : "No hay resultados."}>
+              {paginatedStudents.map((s) => (
+                <TableRow key={s.id} className="border-b border-gray-50 last:border-none hover:bg-gray-50/50">
+                  <TableCell className="font-bold text-gray-500 font-mono">{s.nie}</TableCell>
+                  <TableCell><button onClick={() => navigate(`/student/${s.id}`)} className="font-black text-gray-900 uppercase hover:text-blue-700 text-left">{s.nombre}</button></TableCell>
+                  <TableCell><Chip size="sm" variant="flat" color={s.estado === 'activo' ? 'success' : 'default'} className="font-black uppercase text-[8px]">{s.estado}</Chip></TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1">
+                      <Button isIconOnly size="sm" variant="light" color="primary" onPress={() => navigate(`/student/${s.id}`)}><Eye size={16} /></Button>
+                      <Button isIconOnly size="sm" variant="light" color="primary" onPress={() => handleOpenModal(s)}><Pencil size={16} /></Button>
+                      <Button isIconOnly size="sm" variant="light" color="danger" onPress={() => confirmDelete(s.id)}><Trash2 size={16} /></Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          <div className="flex justify-center p-6 border-t border-gray-50">
+            <Pagination total={Math.ceil(students.length / itemsPerPage)} page={page} onChange={setPage} color="primary" size="sm" showControls />
+          </div>
+        </CardBody>
+      </Card>
+
+      <Modal isOpen={isOpen} onOpenChange={onOpenChange} backdrop="blur">
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader className="border-b bg-gray-50 font-black uppercase text-[#1e3b8a]">Ficha de Estudiante</ModalHeader>
+              <ModalBody className="py-6 space-y-4 text-slate-900">
+                <Input label="NIE" variant="bordered" value={newStudent.nie} onValueChange={(v) => setNewStudent({...newStudent, nie: v})} />
+                <Input label="Nombre" variant="bordered" value={newStudent.nombre} onValueChange={(v) => setNewStudent({...newStudent, nombre: v})} />
+                <div className="grid grid-cols-2 gap-4">
+                  <Select label="Sección" variant="bordered" selectedKeys={newStudent.grupo_id ? [newStudent.grupo_id] : []} onSelectionChange={(keys) => setNewStudent({...newStudent, grupo_id: Array.from(keys)[0] as string})} items={groups}>
+                    {(g) => <SelectItem key={g.id} textValue={g.nombre}>{g.nombre}</SelectItem>}
+                  </Select>
+                  <Select label="Estado" variant="bordered" selectedKeys={[newStudent.estado]} onSelectionChange={(keys) => setNewStudent({...newStudent, estado: Array.from(keys)[0] as string})}>
+                    <SelectItem key="activo" textValue="ACTIVO">ACTIVO</SelectItem>
+                    <SelectItem key="inactivo" textValue="INACTIVO">INACTIVO</SelectItem>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <Select label="Género" variant="bordered" selectedKeys={newStudent.genero ? [newStudent.genero] : []} onSelectionChange={(keys) => setNewStudent({...newStudent, genero: Array.from(keys)[0] as string})}>
+                    <SelectItem key="M">MASCULINO</SelectItem><SelectItem key="F">FEMENINO</SelectItem>
+                  </Select>
+                  <Select label="Turno" variant="bordered" selectedKeys={newStudent.turno ? [newStudent.turno] : []} onSelectionChange={(keys) => setNewStudent({...newStudent, turno: Array.from(keys)[0] as string})}>
+                    <SelectItem key="Matutino">MATUTINO</SelectItem><SelectItem key="Vespertino">VESPERTINO</SelectItem><SelectItem key="Nocturno">NOCTURNO</SelectItem>
+                  </Select>
+                </div>
+              </ModalBody>
+              <ModalFooter className="bg-gray-50 border-t p-4"><Button variant="light" onPress={onClose} className="font-bold">Cerrar</Button><Button color="primary" onPress={() => handleSave(onClose)} className="bg-[#1e3b8a] font-black uppercase text-xs">Guardar</Button></ModalFooter>
+            </>
+          )}
+        </ModalContent>
       </Modal>
 
-      <Modal isOpen={isDeleteOpen} onOpenChange={onDeleteOpenChange} backdrop="blur">
-        <ModalContent>{(onClose) => (
-          <><ModalHeader className="text-red-600 font-black">ELIMINAR</ModalHeader><ModalBody>¿Borrar a <strong>{selectedStudent?.nombre}</strong>?</ModalBody><ModalFooter><Button variant="light" onPress={onClose}>No</Button><Button color="danger" variant="flat" isLoading={isSubmitting} onPress={() => confirmDelete(onClose)}>Eliminar</Button></ModalFooter></>
-        )}</ModalContent>
+      <Modal isOpen={isDelOpen} onOpenChange={onDelOpenChange} size="sm" backdrop="blur">
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader className="flex flex-col gap-1 text-center"><AlertCircle className="mx-auto text-red-500 mb-2" size={40} /><h2 className="text-xl font-black uppercase text-red-600">¿Confirmar?</h2></ModalHeader>
+              <ModalBody className="text-center text-gray-500 font-bold text-sm leading-relaxed"><p>Esta acción es permanente y borrará todo el historial del estudiante.</p></ModalBody>
+              <ModalFooter className="flex justify-center gap-4 p-6"><Button variant="flat" onPress={onClose} className="font-black">No</Button><Button color="danger" onPress={() => handleDelete(onClose)} className="font-black uppercase text-xs">Eliminar</Button></ModalFooter>
+            </>
+          )}
+        </ModalContent>
       </Modal>
     </DashboardLayout>
   );
