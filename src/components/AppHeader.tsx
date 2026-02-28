@@ -45,9 +45,20 @@ export default function AppHeader({ role }: { role: string }) {
   }, []);
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    localStorage.clear(); 
-    navigate('/login');
+    try {
+      // VALIDACIÓN: No permitir cerrar sesión si hay registros pendientes
+      const { db } = await import('../lib/localDb');
+      const pendingCount = await db.pendingEvents.where('sync_status').equals('pending').count();
+      
+      if (pendingCount > 0) {
+        alert(`❌ ATENCIÓN: Tienes ${pendingCount} registros sin sincronizar. Debes subirlos a la nube antes de cerrar sesión para no perderlos.`);
+        return;
+      }
+
+      await supabase.auth.signOut();
+      localStorage.clear(); 
+      navigate('/login');
+    } catch (e) { console.error(e); }
   };
 
   const isDocente = role === 'docente';

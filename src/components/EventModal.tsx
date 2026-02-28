@@ -91,7 +91,6 @@ export default function EventModal({ isOpen, onOpenChange, studentId, studentNam
   const handleSubmit = async (onClose: () => void) => {
     if (!selectedItem || !studentId) return;
     const teacherId = localStorage.getItem('teacher_id');
-    
     if (!teacherId) {
       setNotification({ message: "No se encontró ID de docente", type: 'error' });
       return;
@@ -121,15 +120,18 @@ export default function EventModal({ isOpen, onOpenChange, studentId, studentNam
         }
         setNotification({ message: "Guardado en la nube", type: 'success' });
       } else {
-        // RESTAURACIÓN: Guardado Offline en Dexie
-        await db.pendingEvents.add({ ...eventData, sync_status: 'pending' });
+        // GUARDADO OFFLINE - COHERENTE CON SCHEMA
+        await db.pendingEvents.add({ 
+          ...eventData, 
+          sync_status: 'pending' 
+        });
         setNotification({ message: "Guardado localmente (Offline)", type: 'success' });
       }
       
       if (onSuccess) onSuccess();
       setTimeout(onClose, 500);
     } catch (error: any) {
-      // Fallback de seguridad: si la red falla inesperadamente
+      // Fallback: si falla la red inesperadamente, salvar en Dexie
       await db.pendingEvents.add({
         estudiante_id: studentId!,
         docente_id: teacherId,
@@ -142,7 +144,7 @@ export default function EventModal({ isOpen, onOpenChange, studentId, studentNam
         fecha: new Date().toISOString(),
         sync_status: 'pending'
       });
-      setNotification({ message: "Error de red. Guardado en local.", type: 'success' });
+      setNotification({ message: "Guardado en local por error de red", type: 'success' });
       if (onSuccess) onSuccess();
       setTimeout(onClose, 800);
     } finally { setIsSubmitting(false); }

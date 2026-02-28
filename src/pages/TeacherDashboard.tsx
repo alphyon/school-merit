@@ -44,53 +44,75 @@ export default function TeacherDashboard() {
   };
 
   const syncPendingEvents = async () => {
-    if (!navigator.onLine || isSyncing) return;
-    const pending = await db.pendingEvents.where('sync_status').equals('pending').toArray();
+    if (!navigator.onLine || isSyncing) {
+      if (!navigator.onLine) setNotification({ message: "No hay conexión a internet", type: 'error' });
+      return;
+    }
+    
+    const pending = await db.pendingEvents.toArray();
     if (pending.length === 0) return;
 
     setIsSyncing(true);
     let successCount = 0;
-    let errorOccurred = false;
+    let errorCount = 0;
 
     try {
       for (const event of pending) {
         const { id, sync_status, ...eventData } = event;
-        // 1. Usar el ID de la tabla 'docentes' que es el que espera la FK
-        const realTeacherId = localStorage.getItem('teacher_id');
-        if (realTeacherId) eventData.docente_id = realTeacherId;
+        
+        // Mapeo explícito para evitar fallos de integridad
+        const payload = {
+          estudiante_id: eventData.estudiante_id,
+          docente_id: eventData.docente_id,
+          tipo: eventData.tipo,
+          demerito_id: eventData.demerito_id,
+          redencion_id: eventData.redencion_id,
+          reconocimiento_id: eventData.reconocimiento_id,
+          evento_referencia_id: eventData.evento_referencia_id,
+          observaciones: eventData.observaciones,
+          fecha: eventData.fecha,
+          estado: eventData.estado || 'activo'
+        };
 
-        const { error } = await supabase.from('registros_eventos').insert(eventData);
+        const { error } = await supabase.from('registros_eventos').insert(payload);
+        
         if (!error) {
           await db.pendingEvents.delete(id!);
           successCount++;
         } else {
-          console.error("Error sincronizando:", error.message);
-          errorOccurred = true;
+          console.error("Fallo en registro:", error);
+          errorCount++;
         }
       }
       
       if (successCount > 0) {
-        setNotification({ message: `Sincronizados ${successCount} registros`, type: 'success' });
-        fetchData(); // Refrescar puntos y alertas
+        setNotification({ message: `Sincronizados ${successCount} registros con éxito`, type: 'success' });
+        await fetchData(); // Recargar todo
       }
-      if (errorOccurred) {
-        setNotification({ message: "Algunos registros no se pudieron subir", type: 'error' });
+      if (errorCount > 0) {
+        setNotification({ message: `Error en ${errorCount} registros. Verifique consola.`, type: 'error' });
       }
+    } catch (e) { 
+      console.error(e);
+      setNotification({ message: "Error crítico en sincronización", type: 'error' });
+    } finally { 
+      setIsSyncing(false);
       checkPendingSync();
-    } catch (e) { console.error(e); } finally { setIsSyncing(false); }
+    }
   };
 
   const checkPendingSync = async () => {
-    const count = await db.pendingEvents.where('sync_status').equals('pending').count();
+    const count = await db.pendingEvents.count();
     setPendingSyncCount(count);
   };
 
   const fetchData = async () => {
     try {
-      checkPendingSync();
-      fetchCatalogsToLocal();
+      await checkPendingSync();
+      await fetchCatalogsToLocal();
+      
       if (navigator.onLine) {
-        syncPendingEvents();
+        // QUITADO EL AUTO-SYNC DE AQUÍ PARA DAR CONTROL AL USUARIO
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
         const { data: profile } = await supabase.from('perfiles').select('teacher_id, full_name').eq('id', user.id).single();
@@ -100,12 +122,8 @@ export default function TeacherDashboard() {
           const { data: groupsData } = await supabase.from('docentes_grupos').select('grupos(id, nombre)').eq('docente_id', profile.teacher_id);
           const groups = groupsData?.map((g: any) => g.grupos).filter(Boolean) || [];
           setAssignedGroups(groups);
-          
           await db.groups.bulkPut(groups);
-
-          // Pre-cache students for ALL groups in background
-          groups.forEach(g => fetchStudents(g.id));
-
+          
           const savedId = localStorage.getItem('teacher_group_id');
           const targetId = (savedId && groups.some(g => g.id === savedId)) ? savedId : (groups[0]?.id || "");
           if (targetId) { setSelectedGroupId(targetId); fetchStudents(targetId); }
