@@ -92,37 +92,52 @@ export default function EventModal({ isOpen, onOpenChange, studentId, studentNam
 
     setIsSubmitting(true);
     try {
-      if (navigator.onLine) {
-        const eventData: any = {
-          estudiante_id: studentId,
-          docente_id: teacherId, 
-          tipo: activeTab,
-          demerito_id: activeTab === 'demerito' ? selectedItem.id : null,
-          redencion_id: activeTab === 'redencion' ? selectedItem.id : null,
-          reconocimiento_id: activeTab === 'reconocimiento' ? selectedItem.id : null,
-          evento_referencia_id: activeTab === 'redencion' ? selectedDemeritRef : null,
-          observaciones: observaciones,
-          fecha: new Date().toISOString(),
-          estado: 'activo'
-        };
+      const eventData: any = {
+        estudiante_id: studentId,
+        docente_id: teacherId, 
+        tipo: activeTab,
+        demerito_id: activeTab === 'demerito' ? selectedItem.id : null,
+        redencion_id: activeTab === 'redencion' ? selectedItem.id : null,
+        reconocimiento_id: activeTab === 'reconocimiento' ? selectedItem.id : null,
+        evento_referencia_id: activeTab === 'redencion' ? selectedDemeritRef : null,
+        observaciones: observaciones,
+        fecha: new Date().toISOString(),
+        estado: 'activo'
+      };
 
+      if (navigator.onLine) {
         const { error: insertError } = await supabase.from('registros_eventos').insert(eventData);
         if (insertError) throw insertError;
 
-        // Actualización de estado manual si es redención
         if (activeTab === 'redencion' && selectedDemeritRef) {
-          const { error: updateError } = await supabase.from('registros_eventos')
-            .update({ estado: 'redimido' })
-            .eq('id', selectedDemeritRef);
-          if (updateError) console.error("Error al cerrar falta:", updateError);
+          await supabase.from('registros_eventos').update({ estado: 'redimido' }).eq('id', selectedDemeritRef);
         }
-
-        setNotification({ message: "Guardado correctamente", type: 'success' });
+        setNotification({ message: "Guardado en la nube", type: 'success' });
+      } else {
+        // RESTAURACIÓN: Guardado Offline en Dexie
+        await db.pendingEvents.add({ ...eventData, sync_status: 'pending' });
+        setNotification({ message: "Guardado localmente (Offline)", type: 'success' });
       }
+      
       if (onSuccess) onSuccess();
       setTimeout(onClose, 500);
     } catch (error: any) {
-      setNotification({ message: "Error: " + error.message, type: 'error' });
+      // Fallback de seguridad: si la red falla inesperadamente
+      await db.pendingEvents.add({
+        estudiante_id: studentId!,
+        docente_id: teacherId,
+        tipo: activeTab as any,
+        demerito_id: activeTab === 'demerito' ? selectedItem.id : null,
+        redencion_id: activeTab === 'redencion' ? selectedItem.id : null,
+        reconocimiento_id: activeTab === 'reconocimiento' ? selectedItem.id : null,
+        evento_referencia_id: activeTab === 'redencion' ? selectedDemeritRef : null,
+        observaciones: observaciones,
+        fecha: new Date().toISOString(),
+        sync_status: 'pending'
+      });
+      setNotification({ message: "Error de red. Guardado en local.", type: 'success' });
+      if (onSuccess) onSuccess();
+      setTimeout(onClose, 800);
     } finally { setIsSubmitting(false); }
   };
 

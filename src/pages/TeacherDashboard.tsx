@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { db } from '../lib/localDb';
 import DashboardLayout from '../layouts/DashboardLayout';
 import EventModal from '../components/EventModal';
 import { Notification } from '../components/Notification';
@@ -22,32 +23,66 @@ export default function TeacherDashboard() {
 
   const fetchData = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data: profile } = await supabase.from('perfiles').select('teacher_id, full_name').eq('id', user.id).single();
-      if (profile?.teacher_id) {
-        setTeacherName(profile.full_name || "Docente");
-        localStorage.setItem('teacher_id', profile.teacher_id);
-        const { data: groupsData } = await supabase.from('docentes_grupos').select('grupos(id, nombre)').eq('docente_id', profile.teacher_id);
-        const groups = groupsData?.map((g: any) => g.grupos).filter(Boolean) || [];
-        setAssignedGroups(groups);
+      if (navigator.onLine) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        const { data: profile } = await supabase.from('perfiles').select('teacher_id, full_name').eq('id', user.id).single();
+        if (profile?.teacher_id) {
+          setTeacherName(profile.full_name || "Docente");
+          localStorage.setItem('teacher_id', profile.teacher_id);
+          const { data: groupsData } = await supabase.from('docentes_grupos').select('grupos(id, nombre)').eq('docente_id', profile.teacher_id);
+          const groups = groupsData?.map((g: any) => g.grupos).filter(Boolean) || [];
+          setAssignedGroups(groups);
+          
+          // Guardar grupos en local para modo offline
+          await db.groups.bulkPut(groups);
+
+          const savedId = localStorage.getItem('teacher_group_id');
+          const targetId = (savedId && groups.some(g => g.id === savedId)) ? savedId : (groups[0]?.id || "");
+          if (targetId) { setSelectedGroupId(targetId); fetchStudents(targetId); }
+        }
+      } else {
+        // RESCATE OFFLINE: Cargar desde Dexie
+        const localGroups = await db.groups.toArray();
+        setAssignedGroups(localGroups);
         const savedId = localStorage.getItem('teacher_group_id');
-        const targetId = (savedId && groups.some(g => g.id === savedId)) ? savedId : (groups[0]?.id || "");
+        const targetId = (savedId && localGroups.some(g => g.id === savedId)) ? savedId : (localGroups[0]?.id || "");
         if (targetId) { setSelectedGroupId(targetId); fetchStudents(targetId); }
       }
-    } catch (e) { console.error(e); } finally { setIsLoading(false); }
+    } catch (e) { 
+      // Si falla la red durante la petición
+      const localGroups = await db.groups.toArray();
+      setAssignedGroups(localGroups);
+    } finally { setIsLoading(false); }
   };
 
   const fetchStudents = async (groupId: string) => {
-    const { data: cloud } = await supabase.from('estudiantes_reporte').select('*').eq('grupo_id', groupId);
-    if (cloud) {
-      const studentIds = cloud.map(s => s.id);
-      const { data: events } = await supabase.from('registros_eventos').select('estudiante_id').eq('tipo', 'reconocimiento').in('estudiante_id', studentIds);
-      const enriched = cloud.map(s => ({
-        ...s,
-        total_reconocimientos: events?.filter(e => e.estudiante_id === s.id).length || 0
-      }));
-      setStudents(enriched);
+    try {
+      if (navigator.onLine) {
+        const { data: cloud } = await supabase.from('estudiantes_reporte').select('*').eq('grupo_id', groupId);
+        if (cloud) {
+          const studentIds = cloud.map(s => s.id);
+          const { data: events } = await supabase.from('registros_eventos').select('estudiante_id').eq('tipo', 'reconocimiento').in('estudiante_id', studentIds);
+          const enriched = cloud.map(s => ({
+            ...s,
+            total_reconocimientos: events?.filter(e => e.estudiante_id === s.id).length || 0
+          }));
+          setStudents(enriched);
+          
+          // Actualizar caché local
+          const localToSave = cloud.map(s => ({
+            id: s.id, nie: s.nie, nombre: s.nombre, grupo_id: s.grupo_id, grupo_nombre: s.grupo_nombre
+          }));
+          await db.students.bulkPut(localToSave);
+        }
+      } else {
+        // RESCATE OFFLINE: Cargar desde Dexie
+        const localStudents = await db.students.where('grupo_id').equals(groupId).toArray();
+        setStudents(localStudents);
+      }
+    } catch (e) {
+      const localStudents = await db.students.where('grupo_id').equals(groupId).toArray();
+      setStudents(localStudents);
     }
   };
 
@@ -76,8 +111,8 @@ export default function TeacherDashboard() {
 
       <Card className="mb-8 border-none shadow-sm bg-white">
         <CardBody className="p-4 flex flex-col md:flex-row gap-4 text-slate-900">
-          <Input className="flex-1" placeholder="Buscar alumno..." startContent={<Search size={18} className="text-gray-400" />} value={searchTerm} onValueChange={setSearchTerm} variant="bordered" />
-          <Select className="w-full md:w-64" placeholder="Sección" variant="bordered" selectedKeys={selectedGroupId ? [selectedGroupId] : []} onSelectionChange={(k) => { const id = Array.from(k)[0] as string; setSelectedGroupId(id); localStorage.setItem('teacher_group_id', id); fetchStudents(id); }}>
+          <Input className="flex-1" aria-label="Buscar alumnos" placeholder="Buscar alumno..." startContent={<Search size={18} className="text-gray-400" />} value={searchTerm} onValueChange={setSearchTerm} variant="bordered" />
+          <Select className="w-full md:w-64" aria-label="Seleccionar grupo" placeholder="Sección" variant="bordered" selectedKeys={selectedGroupId ? [selectedGroupId] : []} onSelectionChange={(k) => { const id = Array.from(k)[0] as string; setSelectedGroupId(id); localStorage.setItem('teacher_group_id', id); fetchStudents(id); }}>
             {assignedGroups.map((g) => <SelectItem key={g.id} textValue={g.nombre}>{g.nombre}</SelectItem>)}
           </Select>
         </CardBody>
@@ -127,9 +162,9 @@ export default function TeacherDashboard() {
                   </div>
 
                   <div className="grid grid-cols-3 gap-2 relative z-30">
-                    <Button size="sm" isIconOnly className="bg-red-100 text-red-700 h-10 w-full" onClick={(e) => handleAction(e, s, 'demerito')}><ShieldAlert size={18} /></Button>
-                    <Button size="sm" isIconOnly className="bg-emerald-100 text-emerald-700 h-10 w-full" onClick={(e) => handleAction(e, s, 'redencion')}><History size={18} /></Button>
-                    <Button size="sm" isIconOnly className="bg-purple-100 text-purple-700 h-10 w-full" onClick={(e) => handleAction(e, s, 'reconocimiento')}><Award size={18} /></Button>
+                    <Button aria-label="Registrar demérito" size="sm" isIconOnly className="bg-red-100 text-red-700 h-10 w-full" onClick={(e) => handleAction(e, s, 'demerito')}><ShieldAlert size={18} /></Button>
+                    <Button aria-label="Registrar redención" size="sm" isIconOnly className="bg-emerald-100 text-emerald-700 h-10 w-full" onClick={(e) => handleAction(e, s, 'redencion')}><History size={18} /></Button>
+                    <Button aria-label="Registrar reconocimiento" size="sm" isIconOnly className="bg-purple-100 text-purple-700 h-10 w-full" onClick={(e) => handleAction(e, s, 'reconocimiento')}><Award size={18} /></Button>
                   </div>
                 </div>
               </CardBody>
