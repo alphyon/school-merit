@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { 
   Navbar, NavbarBrand, NavbarContent, NavbarItem, Link, Avatar, Dropdown, 
-  DropdownTrigger, DropdownMenu, DropdownItem, NavbarMenuToggle, NavbarMenu, NavbarMenuItem, Button, useDisclosure 
+  DropdownTrigger, DropdownMenu, DropdownItem, NavbarMenuToggle, NavbarMenu, NavbarMenuItem, Button, useDisclosure, Badge 
 } from "@heroui/react";
-import { GraduationCap, LogOut, Lock as LockIcon, BarChart, Users, Shield, Layers, Settings, Home } from 'lucide-react';
+import { GraduationCap, LogOut, Lock as LockIcon, BarChart, Users, Shield, Layers, Settings, Home, Wifi, WifiOff } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import ChangePasswordModal from './ChangePasswordModal';
@@ -14,19 +14,35 @@ export default function AppHeader({ role }: { role: string }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [userData, setUserData] = useState<any>(null);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [settings, setSettings] = useState({ name: 'SISTEMA DE GESTIÓN', logo: '' });
 
   const fetchUser = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      const { data: profile } = await supabase.from('perfiles').select('full_name, role').eq('id', user.id).single();
-      setUserData({ name: profile?.full_name || user.email, email: user.email });
-    }
-    const { data: config } = await supabase.from('configuracion_sistema').select('nombre_escuela, logo_url').single();
-    if (config) setSettings({ name: config.nombre_escuela, logo: config.logo_url });
+    try {
+      if (navigator.onLine) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profile } = await supabase.from('perfiles').select('full_name, role').eq('id', user.id).single();
+          setUserData({ name: profile?.full_name || user.email, email: user.email });
+        }
+        const { data: config } = await supabase.from('configuracion_sistema').select('nombre_escuela, logo_url').single();
+        if (config) setSettings({ name: config.nombre_escuela, logo: config.logo_url });
+      } else {
+        setUserData({ name: 'Modo Offline', email: '' });
+      }
+    } catch (e) { console.error(e); }
   };
 
-  useEffect(() => { fetchUser(); }, []);
+  useEffect(() => { 
+    fetchUser(); 
+    const handleStatus = () => setIsOnline(navigator.onLine);
+    window.addEventListener('online', handleStatus);
+    window.addEventListener('offline', handleStatus);
+    return () => {
+      window.removeEventListener('online', handleStatus);
+      window.removeEventListener('offline', handleStatus);
+    };
+  }, []);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -90,6 +106,17 @@ export default function AppHeader({ role }: { role: string }) {
       </NavbarContent>
 
       <NavbarContent justify="end">
+        <NavbarItem className="mr-2">
+          {isOnline ? (
+            <Badge color="success" content="" size="sm" shape="circle" placement="bottom-right">
+              <Wifi size={18} className="text-blue-100" />
+            </Badge>
+          ) : (
+            <Badge color="danger" content="" size="sm" shape="circle" placement="bottom-right">
+              <WifiOff size={18} className="text-red-400" />
+            </Badge>
+          )}
+        </NavbarItem>
         <Dropdown placement="bottom-end">
           <DropdownTrigger>
             <Avatar isBordered as="button" className="transition-transform" color="primary" name={userData?.name?.charAt(0)} size="sm" />

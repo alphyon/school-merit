@@ -5,8 +5,8 @@ import { db } from '../lib/localDb';
 import DashboardLayout from '../layouts/DashboardLayout';
 import EventModal from '../components/EventModal';
 import { Notification } from '../components/Notification';
-import { Card, CardBody, Button, Select, SelectItem, Spinner, Avatar, Input } from "@heroui/react";
-import { Search, ShieldAlert, Award, History, LayoutDashboard, Users } from 'lucide-react';
+import { Card, CardBody, Button, Select, SelectItem, Spinner, Avatar, Input, Badge } from "@heroui/react";
+import { Search, ShieldAlert, Award, History, LayoutDashboard, Users, CloudSync } from 'lucide-react';
 
 export default function TeacherDashboard() {
   const navigate = useNavigate();
@@ -20,10 +20,59 @@ export default function TeacherDashboard() {
   const [selectedStudent, setSelectedStudent] = useState<{id: string, name: string} | null>(null);
   const [modalTab, setModalTab] = useState("demerito");
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
+  const [pendingSyncCount, setPendingSyncCount] = useState(0);
+  const [isSyncing, setIsSyncing] = useState(false);
+
+  const fetchCatalogsToLocal = async () => {
+    if (!navigator.onLine) return;
+    try {
+      const catalogs = [
+        { table: 'demeritos_catalogo', tipo: 'demerito' },
+        { table: 'redenciones_catalogo', tipo: 'redencion' },
+        { table: 'reconocimientos_catalogo', tipo: 'reconocimiento' }
+      ];
+      for (const cat of catalogs) {
+        const { data } = await supabase.from(cat.table).select('*');
+        if (data) {
+          const formatted = data.map(item => ({
+            id: item.id, codigo: item.codigo, descripcion: item.descripcion, puntos_valor: item.puntos_valor, tipo: cat.tipo
+          }));
+          await db.catalog.bulkPut(formatted as any);
+        }
+      }
+    } catch (e) { console.error("Catalog sync error:", e); }
+  };
+
+  const syncPendingEvents = async () => {
+    if (!navigator.onLine || isSyncing) return;
+    const pending = await db.pendingEvents.where('sync_status').equals('pending').toArray();
+    if (pending.length === 0) return;
+
+    setIsSyncing(true);
+    try {
+      for (const event of pending) {
+        const { id, sync_status, ...eventData } = event;
+        const { error } = await supabase.from('registros_eventos').insert(eventData);
+        if (!error) {
+          await db.pendingEvents.delete(id!);
+        }
+      }
+      setNotification({ message: "Sincronización completada", type: 'success' });
+      checkPendingSync();
+    } catch (e) { console.error(e); } finally { setIsSyncing(false); }
+  };
+
+  const checkPendingSync = async () => {
+    const count = await db.pendingEvents.where('sync_status').equals('pending').count();
+    setPendingSyncCount(count);
+  };
 
   const fetchData = async () => {
     try {
+      checkPendingSync();
+      fetchCatalogsToLocal();
       if (navigator.onLine) {
+        syncPendingEvents();
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
         const { data: profile } = await supabase.from('perfiles').select('teacher_id, full_name').eq('id', user.id).single();
@@ -34,15 +83,16 @@ export default function TeacherDashboard() {
           const groups = groupsData?.map((g: any) => g.grupos).filter(Boolean) || [];
           setAssignedGroups(groups);
           
-          // Guardar grupos en local para modo offline
           await db.groups.bulkPut(groups);
+
+          // Pre-cache students for ALL groups in background
+          groups.forEach(g => fetchStudents(g.id));
 
           const savedId = localStorage.getItem('teacher_group_id');
           const targetId = (savedId && groups.some(g => g.id === savedId)) ? savedId : (groups[0]?.id || "");
           if (targetId) { setSelectedGroupId(targetId); fetchStudents(targetId); }
         }
       } else {
-        // RESCATE OFFLINE: Cargar desde Dexie
         const localGroups = await db.groups.toArray();
         setAssignedGroups(localGroups);
         const savedId = localStorage.getItem('teacher_group_id');
@@ -50,7 +100,6 @@ export default function TeacherDashboard() {
         if (targetId) { setSelectedGroupId(targetId); fetchStudents(targetId); }
       }
     } catch (e) { 
-      // Si falla la red durante la petición
       const localGroups = await db.groups.toArray();
       setAssignedGroups(localGroups);
     } finally { setIsLoading(false); }
@@ -106,6 +155,23 @@ export default function TeacherDashboard() {
         <div>
           <h1 className="text-3xl font-black uppercase tracking-tight flex items-center gap-3"><LayoutDashboard className="text-[#1e3b8a]" size={32} /> Panel de Alumnos</h1>
           <p className="text-gray-500 font-bold uppercase text-[10px] tracking-widest mt-1">Docente: {teacherName}</p>
+        </div>
+        <div className="flex gap-2">
+          {pendingSyncCount > 0 && (
+            <Button 
+              color="warning" 
+              variant="flat" 
+              className="font-black uppercase text-[10px]" 
+              startContent={<CloudSync size={18} className={isSyncing ? "animate-spin" : ""} />}
+              onPress={syncPendingEvents}
+              isLoading={isSyncing}
+            >
+              Sincronizar ({pendingSyncCount})
+            </Button>
+          )}
+          {!navigator.onLine && (
+            <Badge color="danger" variant="flat" className="font-black uppercase text-[10px] px-4 py-2">MODO OFFLINE ACTIVO</Badge>
+          )}
         </div>
       </div>
 

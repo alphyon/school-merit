@@ -33,7 +33,11 @@ export default function EventModal({ isOpen, onOpenChange, studentId, studentNam
     setIsLoading(true);
     setItems([]);
     try {
+      // 1. Cargar desde Dexie primero (Siempre)
       let data = await db.catalog.where('tipo').equals(typeToFetch).toArray();
+      setItems(data.sort((a, b) => a.codigo.localeCompare(b.codigo)));
+
+      // 2. Si hay red, actualizar el caché
       if (navigator.onLine) {
         const tableName = typeToFetch === 'demerito' ? 'demeritos_catalogo' : (typeToFetch === 'redencion' ? 'redenciones_catalogo' : 'reconocimientos_catalogo');
         const { data: cloudData } = await supabase.from(tableName).select('*');
@@ -42,18 +46,17 @@ export default function EventModal({ isOpen, onOpenChange, studentId, studentNam
             id: item.id, codigo: item.codigo, descripcion: item.descripcion, puntos_valor: item.puntos_valor, tipo: typeToFetch
           }));
           await db.catalog.bulkPut(localItems as any);
-          data = localItems as any;
+          setItems(localItems.sort((a, b) => a.codigo.localeCompare(b.codigo)));
         }
-      }
-      setItems(data.sort((a, b) => a.codigo.localeCompare(b.codigo)));
 
-      if (typeToFetch === 'redencion' && studentId && navigator.onLine) {
-        const { data: demData } = await supabase.from('registros_eventos')
-          .select('id, created_at, demeritos_catalogo(codigo, descripcion)')
-          .eq('estudiante_id', studentId)
-          .eq('tipo', 'demerito')
-          .eq('estado', 'activo');
-        setActiveDemerits(demData || []);
+        if (typeToFetch === 'redencion' && studentId) {
+          const { data: demData } = await supabase.from('registros_eventos')
+            .select('id, created_at, demeritos_catalogo(codigo, descripcion)')
+            .eq('estudiante_id', studentId)
+            .eq('tipo', 'demerito')
+            .eq('estado', 'activo');
+          setActiveDemerits(demData || []);
+        }
       }
     } catch (error) { console.error(error); } finally { setIsLoading(false); }
   };
@@ -161,6 +164,11 @@ export default function EventModal({ isOpen, onOpenChange, studentId, studentNam
               {activeTab === 'redencion' && (
                 <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100">
                   <p className="text-[10px] font-black text-blue-600 uppercase mb-3 flex items-center gap-2"><AlertCircle size={14} /> Demérito a redimir:</p>
+                  {!navigator.onLine && (
+                    <div className="mb-3 p-3 bg-red-50 border border-red-100 rounded-xl text-[10px] font-black text-red-600 uppercase">
+                      ⚠️ Se requiere internet para ver las faltas activas del alumno.
+                    </div>
+                  )}
                   {initialDemeritId ? (
                     <div className="p-3 bg-white rounded-xl border border-blue-200 font-bold text-xs text-blue-700 uppercase">
                       {activeDemerits.find(d => d.id === initialDemeritId)?.demeritos_catalogo?.descripcion || "Falta seleccionada..."}
@@ -196,7 +204,15 @@ export default function EventModal({ isOpen, onOpenChange, studentId, studentNam
             </ModalBody>
             <ModalFooter className="bg-slate-50/50 border-t border-slate-100 p-4">
               <Button variant="light" onPress={() => onClose()} className="font-black text-slate-400 uppercase text-[10px]">Cerrar</Button>
-              <Button color={activeTab === 'demerito' ? "danger" : (activeTab === 'redencion' ? "success" : "secondary")} className={`font-black uppercase text-[10px] h-10 px-8 text-white shadow-lg`} onPress={() => handleSubmit(onClose)} isLoading={isSubmitting} isDisabled={!selectedItem}>Confirmar</Button>
+              <Button 
+                color={activeTab === 'demerito' ? "danger" : (activeTab === 'redencion' ? "success" : "secondary")} 
+                className={`font-black uppercase text-[10px] h-10 px-8 text-white shadow-lg`} 
+                onPress={() => handleSubmit(onClose)} 
+                isLoading={isSubmitting} 
+                isDisabled={!selectedItem || (activeTab === 'redencion' && !navigator.onLine)}
+              >
+                Confirmar
+              </Button>
             </ModalFooter>
           </>
         )}
