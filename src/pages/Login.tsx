@@ -54,8 +54,9 @@ export default function Login() {
 
       if (authError) throw authError;
 
-      if (user) {
-        const { data: profile, error: profileError } = await supabase
+        if (user) {
+          localStorage.setItem('supabase_user_id', user.id);
+          const { data: profile, error: profileError } = await supabase
           .from('perfiles')
           .select('role, teacher_id')
           .eq('id', user.id)

@@ -49,18 +49,34 @@ export default function TeacherDashboard() {
     if (pending.length === 0) return;
 
     setIsSyncing(true);
+    let successCount = 0;
+    let errorOccurred = false;
+
     try {
       for (const event of pending) {
         const { id, sync_status, ...eventData } = event;
+        // 1. Asegurar que estamos enviando el ID de docente correcto (Auth UUID)
+        const realUserId = localStorage.getItem('supabase_user_id');
+        if (realUserId) eventData.docente_id = realUserId;
+
         const { error } = await supabase.from('registros_eventos').insert(eventData);
         if (!error) {
           await db.pendingEvents.delete(id!);
+          successCount++;
+        } else {
+          console.error("Error sincronizando registro:", error.message);
+          errorOccurred = true;
         }
       }
-      setNotification({ message: "Sincronización completada", type: 'success' });
+      
+      if (successCount > 0) {
+        setNotification({ message: `Sincronizados ${successCount} registros`, type: 'success' });
+        fetchData(); // Refrescar puntos y alertas
+      }
+      if (errorOccurred) {
+        setNotification({ message: "Algunos registros no se pudieron subir", type: 'error' });
+      }
       checkPendingSync();
-      // Auto-refrescar datos después de sincronizar
-      fetchData();
     } catch (e) { console.error(e); } finally { setIsSyncing(false); }
   };
 
