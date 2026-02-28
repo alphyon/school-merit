@@ -5,7 +5,7 @@ import { db } from '../lib/localDb';
 import DashboardLayout from '../layouts/DashboardLayout';
 import EventModal from '../components/EventModal';
 import { Notification } from '../components/Notification';
-import { Card, CardBody, Button, Select, SelectItem, Spinner, Avatar, Input, Badge } from "@heroui/react";
+import { Card, CardBody, Button, Select, SelectItem, Spinner, Avatar, Input } from "@heroui/react";
 import { Search, ShieldAlert, Award, History, LayoutDashboard, Users, CloudSync } from 'lucide-react';
 
 export default function TeacherDashboard() {
@@ -59,6 +59,8 @@ export default function TeacherDashboard() {
       }
       setNotification({ message: "Sincronización completada", type: 'success' });
       checkPendingSync();
+      // Auto-refrescar datos después de sincronizar
+      fetchData();
     } catch (e) { console.error(e); } finally { setIsSyncing(false); }
   };
 
@@ -151,6 +153,23 @@ export default function TeacherDashboard() {
   return (
     <DashboardLayout role="docente">
       {notification && <Notification message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
+      
+      {!navigator.onLine && (
+        <Card className="mb-6 border-none shadow-md bg-orange-500 text-white rounded-2xl overflow-hidden">
+          <CardBody className="py-3 px-6 flex flex-row items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="bg-white/20 p-2 rounded-xl">
+                <CloudSync size={20} className="animate-pulse" />
+              </div>
+              <div>
+                <p className="text-xs font-black uppercase tracking-widest">Modo Offline Activo</p>
+                <p className="text-[10px] font-bold opacity-90">Los datos se guardarán localmente y se sincronizarán al detectar conexión.</p>
+              </div>
+            </div>
+          </CardBody>
+        </Card>
+      )}
+
       <div className="flex justify-between items-center mb-8 text-slate-900">
         <div>
           <h1 className="text-3xl font-black uppercase tracking-tight flex items-center gap-3"><LayoutDashboard className="text-[#1e3b8a]" size={32} /> Panel de Alumnos</h1>
@@ -168,9 +187,6 @@ export default function TeacherDashboard() {
             >
               Sincronizar ({pendingSyncCount})
             </Button>
-          )}
-          {!navigator.onLine && (
-            <Badge color="danger" variant="flat" className="font-black uppercase text-[10px] px-4 py-2">MODO OFFLINE ACTIVO</Badge>
           )}
         </div>
       </div>
@@ -190,21 +206,21 @@ export default function TeacherDashboard() {
           const merits = s.puntos_limpiados || 0;
           const recognitions = s.total_reconocimientos || 0;
           let alertMsg = ""; let alertStyle = "";
-          if (points >= 15) { alertMsg = "NO PROMOCIÓN"; alertStyle = "text-red-600 border-red-600"; }
-          else if (points >= 10) { alertMsg = "SUSPENSIÓN"; alertStyle = "text-orange-600 border-orange-600"; }
-          else if (points >= 6) { alertMsg = "AVISO FAMILIA"; alertStyle = "text-orange-500 border-orange-500"; }
-          else if (points >= 3) { alertMsg = "ADVERTENCIA"; alertStyle = "text-blue-600 border-blue-600"; }
+          if (points >= 15) { alertMsg = "NO PROMOCIÓN"; alertStyle = "text-red-600 border-red-600 bg-white"; }
+          else if (points >= 10) { alertMsg = "SUSPENSIÓN"; alertStyle = "text-orange-600 border-orange-600 bg-white"; }
+          else if (points >= 6) { alertMsg = "AVISO FAMILIA"; alertStyle = "text-yellow-600 border-yellow-500 bg-yellow-50"; }
+          else if (points >= 3) { alertMsg = "ADVERTENCIA"; alertStyle = "text-blue-600 border-blue-600 bg-white"; }
 
           return (
             <Card key={s.id} className="border-none shadow-sm hover:shadow-2xl transition-all duration-500 bg-white overflow-visible group">
               <CardBody className="p-0 overflow-visible text-slate-900">
-                <div className={`h-24 relative rounded-t-2xl cursor-pointer ${ points >= 15 ? 'bg-red-600' : (points >= 6 ? 'bg-orange-500' : 'bg-[#1e3b8a]') }`} onClick={() => navigate(`/student/${s.id}`)}>
+                <div className={`h-24 relative rounded-t-2xl cursor-pointer ${ points >= 15 ? 'bg-red-600' : (points >= 10 ? 'bg-orange-600' : (points >= 6 ? 'bg-yellow-500' : 'bg-[#1e3b8a]')) }`} onClick={() => navigate(`/student/${s.id}`)}>
                   <div className="absolute top-0 right-0 p-3 opacity-10"><Users size={80} className="text-white transform rotate-12" /></div>
                   <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 z-10">
                     <Avatar name={s.nombre} className="w-20 h-20 text-xl border-4 border-white shadow-xl bg-gray-200" />
                   </div>
                   {alertMsg && (
-                    <div className={`absolute -top-3 left-1/2 -translate-x-1/2 bg-white px-4 py-1 rounded-full border-2 shadow-xl font-black text-[9px] z-20 animate-bounce ${alertStyle}`}>
+                    <div className={`absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full border-2 shadow-xl font-black text-[9px] z-20 animate-bounce ${alertStyle}`}>
                       {alertMsg}
                     </div>
                   )}
