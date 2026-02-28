@@ -22,6 +22,27 @@ export default function TeacherDashboard() {
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
   const [pendingSyncCount, setPendingSyncCount] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      setNotification({ message: "Conexión restaurada", type: 'success' });
+      fetchData(); // Refrescar para ver si hay cambios en la nube
+    };
+    const handleOffline = () => {
+      setIsOnline(false);
+      setNotification({ message: "Modo Offline activado", type: 'error' });
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const fetchCatalogsToLocal = async () => {
     if (!navigator.onLine) return;
@@ -182,6 +203,16 @@ export default function TeacherDashboard() {
     setIsModalOpen(true);
   };
 
+  const handleEventSuccess = async () => {
+    checkPendingSync();
+    if (isOnline) {
+      await fetchStudents(selectedGroupId);
+      setNotification({ message: "Registro guardado en la nube", type: 'success' });
+    } else {
+      setNotification({ message: "Guardado localmente. Sincroniza para actualizar puntos.", type: 'success' });
+    }
+  };
+
   const filtered = students.filter(s => s.nombre.toLowerCase().includes(searchTerm.toLowerCase()));
 
   if (isLoading) return <DashboardLayout role="docente"><div className="h-[80vh] flex items-center justify-center"><Spinner /></div></DashboardLayout>;
@@ -190,8 +221,8 @@ export default function TeacherDashboard() {
     <DashboardLayout role="docente">
       {notification && <Notification message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
       
-      {!navigator.onLine && (
-        <Card className="mb-6 border-none shadow-md bg-orange-500 text-white rounded-2xl overflow-hidden">
+      {!isOnline && (
+        <Card className="mb-6 border-none shadow-md bg-orange-500 text-white rounded-2xl overflow-hidden animate-in slide-in-from-top-2 duration-500">
           <CardBody className="py-3 px-6 flex flex-row items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="bg-white/20 p-2 rounded-xl">
@@ -216,10 +247,11 @@ export default function TeacherDashboard() {
             <Button 
               color="warning" 
               variant="flat" 
-              className="font-black uppercase text-[10px]" 
+              className="font-black uppercase text-[10px] h-10 px-6 rounded-xl border-2 border-orange-100 shadow-sm" 
               startContent={<CloudSync size={18} className={isSyncing ? "animate-spin" : ""} />}
               onPress={syncPendingEvents}
               isLoading={isSyncing}
+              isDisabled={!isOnline}
             >
               Sincronizar ({pendingSyncCount})
             </Button>
@@ -304,7 +336,16 @@ export default function TeacherDashboard() {
           );
         })}
       </div>
-      {selectedStudent && <EventModal isOpen={isModalOpen} onOpenChange={setIsModalOpen} studentId={selectedStudent.id} studentName={selectedStudent.name} initialTab={modalTab} onSuccess={() => fetchStudents(selectedGroupId)} />}
+      {selectedStudent && (
+        <EventModal 
+          isOpen={isModalOpen} 
+          onOpenChange={setIsModalOpen} 
+          studentId={selectedStudent.id} 
+          studentName={selectedStudent.name} 
+          initialTab={modalTab} 
+          onSuccess={handleEventSuccess} 
+        />
+      )}
     </DashboardLayout>
   );
 }
