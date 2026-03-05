@@ -3,7 +3,8 @@ import { supabase } from '../lib/supabase';
 import DashboardLayout from '../layouts/DashboardLayout';
 import { Notification } from '../components/Notification';
 import { Card, CardBody, Button, Input, Spinner } from "@heroui/react";
-import { Settings, School, ShieldAlert, Save, Upload, Trash2, ImageIcon, MapPin } from 'lucide-react';
+import { Settings, School, ShieldAlert, Save, Upload, Trash2, ImageIcon, MapPin, FileSpreadsheet, Download } from 'lucide-react';
+import { downloadStudentTemplate } from '../utils/templateUtils';
 
 export default function AdminSettings() {
   const [isLoading, setIsLoading] = useState(true);
@@ -109,6 +110,27 @@ export default function AdminSettings() {
                   <ShieldAlert size={18} /> Reglas
                 </div>
                 <Input label="Límite para Alerta" type="number" variant="bordered" value={settings.limite_demeritos_alerta.toString()} onValueChange={(v) => setSettings({...settings, limite_demeritos_alerta: Number(v)})} />
+              </div>
+
+              <div className="space-y-6">
+                <div className="flex items-center gap-2 text-emerald-600 font-black uppercase text-xs tracking-widest border-b pb-2">
+                  <FileSpreadsheet size={18} /> Formatos de Carga
+                </div>
+                <div className="bg-emerald-50 p-6 rounded-2xl border border-emerald-100 flex items-center justify-between">
+                  <div>
+                    <p className="text-emerald-900 font-black text-xs uppercase">Plantilla de Alumnos</p>
+                    <p className="text-[10px] text-emerald-700 font-medium">Descargue el formato base para la carga masiva de estudiantes.</p>
+                  </div>
+                  <Button 
+                    color="success" 
+                    variant="flat" 
+                    className="font-black text-[10px] uppercase h-10" 
+                    startContent={<Download size={16} />}
+                    onPress={downloadStudentTemplate}
+                  >
+                    Descargar Excel
+                  </Button>
+                </div>
               </div>
 
               <Button color="primary" className="bg-[#1e3b8a] font-black h-14 w-full shadow-xl uppercase" startContent={<Save size={20} />} isLoading={isSaving} onPress={handleSaveSettings}>Guardar Todo</Button>

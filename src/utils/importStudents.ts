@@ -16,38 +16,42 @@ export const importStudentsFromCSV = async (csvFile: File): Promise<ImportResult
         try {
           const rawRows = results.data as any[];
           
-          // 1. Identificar grupos únicos (Grado + Sección)
+          // 1. Identificar grupos únicos (Grado + Sección + Turno)
           const groupsData = new Map();
           rawRows.forEach(row => {
             const grado = String(row['GRADO'] || row['grado'] || 'SIN GRADO').trim();
-            const seccion = String(row['SECCION '] || row['seccion'] || 'A').trim().toUpperCase();
+            const seccion = String(row['SECCION'] || row['seccion'] || row['SECCION '] || 'A').trim().toUpperCase();
+            // Normalizar Turno (Matutino, Vespertino, Nocturno)
+            let turno = String(row['TURNO'] || row['turno'] || 'Matutino').trim();
+            turno = turno.charAt(0).toUpperCase() + turno.slice(1).toLowerCase();
+            if (!['Matutino', 'Vespertino', 'Nocturno'].includes(turno)) turno = 'Matutino';
+
             if (!grado || grado === 'undefined') return;
             
-            const key = `${grado}|${seccion}|Matutino`;
+            const key = `${grado}|${seccion}|${turno}`;
             if (!groupsData.has(key)) {
-              groupsData.set(key, { grado, seccion, turno: 'Matutino', nombre: `${grado} "${seccion}"` });
+              groupsData.set(key, { grado, seccion, turno, nombre: `${grado} "${seccion}" (${turno})` });
             }
           });
 
-          // Upsert de grupos
+          // Upsert de grupos (Busca por grado, sección y turno)
           const { data: createdGroups, error: groupError } = await supabase
             .from('grupos')
-            .upsert(Array.from(groupsData.values()), { onConflict: 'grado,seccion,turno' })
+            .upsert(Array.from(groupsData.values()), { onConflict: 'nombre' }) // Usamos nombre o podrías usar un composite index si existe
             .select();
 
           if (groupError) throw groupError;
           const groupMap = new Map(createdGroups.map((g: any) => [`${g.grado}|${g.seccion}|${g.turno}`, g.id]));
 
-          // 2. Preparar Estudiantes con Detección de Género y Limpieza de Duplicados
-          const studentMap = new Map(); // Usamos un Map para evitar duplicados por NIE en el CSV
+          // 2. Preparar Estudiantes
+          const studentMap = new Map();
 
           rawRows.forEach((row: any) => {
             const nie = String(row['NIE'] || '').trim();
-            const nombre = String(row['NOMBRE DEL ESTUDIANTES'] || row['NOMBRE'] || '').trim().toUpperCase();
+            const nombre = String(row['NOMBRE DEL ESTUDIANTE'] || row['NOMBRE DEL ESTUDIANTES'] || row['NOMBRE'] || '').trim().toUpperCase();
             
             if (!nie || nie === 'null' || !nombre) return;
 
-            // Detección de género en cualquier columna (por el desorden del CSV)
             let detectGender = 'M';
             for (const key of Object.keys(row)) {
               const val = String(row[key] || '').trim().toUpperCase();
@@ -55,20 +59,25 @@ export const importStudentsFromCSV = async (csvFile: File): Promise<ImportResult
               if (val === 'M' || val === 'MASCULINO') { detectGender = 'M'; break; }
             }
 
-            const grado = String(row['GRADO'] || row['grado'] || 'SIN GRADO').trim();
-            const seccion = String(row['SECCION '] || row['seccion'] || 'A').trim().toUpperCase();
-            const key = `${grado}|${seccion}|Matutino`;
+            const grado = String(row['GRADO'] || 'SIN GRADO').trim();
+            const seccion = String(row['SECCION'] || row['SECCION '] || 'A').trim().toUpperCase();
+            let turno = String(row['TURNO'] || 'Matutino').trim();
+            turno = turno.charAt(0).toUpperCase() + turno.slice(1).toLowerCase();
+            if (!['Matutino', 'Vespertino', 'Nocturno'].includes(turno)) turno = 'Matutino';
 
-            // SI EL NIE YA EXISTE EN ESTA CARGA, SE IGNORA EL SEGUNDO (Evita error 21000)
+            const key = `${grado}|${seccion}|${turno}`;
+
             if (!studentMap.has(nie)) {
               studentMap.set(nie, {
                 nie: nie,
                 nombre: nombre,
                 genero: detectGender,
-                responsable: row[' PADRE/MADRE O RESPONSABLE'] || '',
+                responsable: row['PADRE/MADRE O RESPONSABLE'] || row[' PADRE/MADRE O RESPONSABLE'] || '',
                 dui_responsable: row['DUI'] || '',
                 grupo_id: groupMap.get(key),
-                turno: 'Matutino'
+                grado: grado,
+                seccion: seccion,
+                turno: turno
               });
             }
           });
