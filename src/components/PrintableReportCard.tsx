@@ -16,7 +16,7 @@ export const PrintableReportCard = React.forwardRef<HTMLDivElement, ReportCardPr
           <div className="text-left">
             <h1 className="text-2xl font-bold uppercase">{schoolName || 'CENTRO ESCOLAR PÚBLICO'}</h1>
             <h2 className="text-lg font-semibold italic">Boleta de Historial Conductual</h2>
-            <p className="text-xs font-bold uppercase tracking-widest">Sistema de Gestión de Méritos</p>
+            <p className="text-xs font-bold uppercase tracking-widest">Sistema de Gestión de Deméritos</p>
           </div>
         </div>
         <div className="text-right text-xs">
@@ -73,7 +73,7 @@ export const PrintableReportCard = React.forwardRef<HTMLDivElement, ReportCardPr
       </div>
 
       <footer className="fixed bottom-10 left-0 right-0 text-center text-[8px] text-slate-400 uppercase tracking-[0.3em]">
-        Documento oficial generado por el Sistema de Gestión de Méritos
+        Documento oficial generado por el Sistema de Gestión de Deméritos
       </footer>
     </div>
   );

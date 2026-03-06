@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { Button, Input, Select, SelectItem, Card, CardBody } from "@heroui/react";
 import { GraduationCap, Eye, EyeOff } from 'lucide-react';
 import { Notification } from '../components/Notification';
+import { Footer } from '../components/Footer';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -12,7 +13,7 @@ export default function Login() {
   const [isVisible, setIsVisible] = useState(false);
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [schoolName, setSchoolName] = useState('Sistema de Gestión de Méritos');
+  const [schoolName, setSchoolName] = useState('Sistema de Gestión de Deméritos');
   const [logoUrl, setLogoUrl] = useState('');
   const navigate = useNavigate();
 
@@ -107,7 +108,7 @@ export default function Login() {
                 {logoUrl ? <img src={logoUrl} className="size-full object-contain p-2" alt="Logo" /> : <GraduationCap className="text-[#1e3b8a] w-12 h-12" />}
               </div>
               <h1 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight leading-tight">{schoolName}</h1>
-              <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-2">Control de Gestión de Méritos</p>
+              <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-2">Control de Gestión de Deméritos</p>
             </div>
 
             <form onSubmit={handleLogin} className="space-y-5">
@@ -135,7 +136,9 @@ export default function Login() {
             </form>
           </CardBody>
         </Card>
-        <p className="mt-8 text-center text-slate-400 text-[9px] font-black uppercase tracking-[0.2em]">© 2024 Sistema de Gestión Escolar</p>
+        <div className="mt-8">
+          <Footer />
+        </div>
       </div>
     </div>
   );

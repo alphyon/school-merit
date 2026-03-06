@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import ChangePasswordModal from '../components/ChangePasswordModal';
+import { Footer } from '../components/Footer';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -27,26 +28,49 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
 
   const fetchSessionData = async () => {
     try {
-      if (navigator.onLine) {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          const { data: profile } = await supabase.from('perfiles').select('full_name, role').eq('id', user.id).single();
-          const userObj = { name: profile?.full_name || user.email, email: user.email };
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      
+      // Si hay error de auth o no hay usuario, mandamos al login de inmediato
+      if (userError || !user) {
+        localStorage.clear();
+        navigate('/login');
+        return;
+      }
+
+      if (user) {
+        const { data: profile } = await supabase.from('perfiles').select('full_name, role').eq('id', user.id).single();
+        if (profile) {
+          const userObj = { name: profile.full_name, email: user.email };
           setUserData(userObj);
           localStorage.setItem('cached_user', JSON.stringify(userObj));
         }
-        
-        const { data: config } = await supabase.from('configuracion_sistema').select('nombre_escuela, logo_url').single();
-        if (config) {
-          const configObj = { name: config.nombre_escuela, logo: config.logo_url };
-          setSchoolConfig(configObj);
-          localStorage.setItem('cached_config', JSON.stringify(configObj));
-        }
       }
-    } catch (error) { console.warn("Offline mode"); }
+      
+      const { data: config } = await supabase.from('configuracion_sistema').select('nombre_escuela, logo_url').single();
+      if (config) {
+        const configObj = { name: config.nombre_escuela, logo: config.logo_url };
+        setSchoolConfig(configObj);
+        localStorage.setItem('cached_config', JSON.stringify(configObj));
+      }
+    } catch (error) { 
+      console.error("Error de sesión:", error);
+      navigate('/login');
+    }
   };
 
-  useEffect(() => { fetchSessionData(); }, []);
+  useEffect(() => { 
+    fetchSessionData(); 
+
+    // Escuchador de eventos de autenticación (Cierre de sesión, Token expirado, etc)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT' || !session) {
+        localStorage.clear();
+        navigate('/login');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -82,7 +106,7 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
             <div className="size-10 bg-white/20 rounded-xl flex items-center justify-center mr-3"><GraduationCap /></div>
           )}
           <div className="flex flex-col overflow-hidden">
-            <span className="text-[10px] font-black opacity-60 uppercase tracking-widest leading-none">Gestión Escolar</span>
+            <span className="text-[10px] font-black opacity-60 uppercase tracking-widest leading-none">Gestión de Deméritos</span>
             <span className="text-sm font-black truncate uppercase">{schoolConfig.name}</span>
           </div>
         </div>
@@ -180,7 +204,8 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
         )}
 
         <main className="flex-1 overflow-y-auto bg-gray-50/50 p-4 lg:p-10 scroll-smooth">
-          <div className="max-w-7xl mx-auto pb-20">{children}</div>
+          <div className="max-w-7xl mx-auto min-h-[calc(100vh-14rem)]">{children}</div>
+          <Footer />
         </main>
       </div>
 

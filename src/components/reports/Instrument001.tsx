@@ -46,25 +46,24 @@ export const Instrument001 = React.forwardRef<HTMLDivElement, Instrument001Props
             />
           </div>
 
-          {/* Datos Personales */}
           <div className="border border-black p-2 rounded mb-3">
             <div className="grid grid-cols-2 gap-x-4 gap-y-1 mb-1">
-              <div className="border-b border-gray-300 flex justify-between">1. Centro Educativo: <span className="font-bold uppercase ml-2">{schoolName}</span></div>
-              <div className="border-b border-gray-300 flex justify-between">2. Código C.E.: <span className="font-bold ml-2">{config.codigoCe}</span></div>
+              <div className="border-b border-gray-300 flex justify-start">1. Centro Educativo: <span className="font-bold uppercase ml-2">{schoolName}</span></div>
+              <div className="border-b border-gray-300 flex justify-start">2. Código C.E.: <span className="font-bold ml-2">{config.codigoCe}</span></div>
             </div>
             <div className="grid grid-cols-3 gap-x-4 gap-y-1 mb-1">
-              <div className="border-b border-gray-300 flex justify-between">3. Depto: <span className="font-bold ml-1">{config.departamento}</span></div>
-              <div className="border-b border-gray-300 flex justify-between">4. Mun: <span className="font-bold ml-1">{config.municipio}</span></div>
-              <div className="border-b border-gray-300 flex justify-between">5. Dist: <span className="font-bold ml-1">{config.distrito}</span></div>
+              <div className="border-b border-gray-300 flex justify-start">3. Depto: <span className="font-bold ml-1">{config.departamento}</span></div>
+              <div className="border-b border-gray-300 flex justify-start">4. Mun: <span className="font-bold ml-1">{config.municipio}</span></div>
+              <div className="border-b border-gray-300 flex justify-start">5. Dist: <span className="font-bold ml-1">{config.distrito}</span></div>
             </div>
             <div className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 mb-1">
-              <div className="border-b border-gray-300 flex justify-between">6. Nombre: <span className="font-bold uppercase ml-2">{student.nombre}</span></div>
-              <div className="border-b border-gray-300 flex justify-between w-40">7. NIE: <span className="font-bold ml-2">{student.nie}</span></div>
+              <div className="border-b border-gray-300 flex justify-start">6. Nombre: <span className="font-bold uppercase ml-2">{student.nombre}</span></div>
+              <div className="border-b border-gray-300 flex justify-start w-40">7. NIE: <span className="font-bold ml-2">{student.nie}</span></div>
             </div>
             <div className="grid grid-cols-3 gap-x-4 gap-y-1">
-              <div className="border-b border-gray-300 flex justify-between">8. Sexo: <span className="font-bold ml-2">{student.genero === 'M' ? 'Masculino' : (student.genero === 'F' ? 'Femenino' : student.genero)}</span></div>
-              <div className="border-b border-gray-300 flex justify-between">9. Grado/Sección: <span className="font-bold ml-2">{student.grado}</span></div>
-              <div className="border-b border-gray-300 flex justify-between">10. Turno: <span className="font-bold ml-2">{student.turno || '_________'}</span></div>
+              <div className="border-b border-gray-300 flex justify-start">8. Sexo: <span className="font-bold ml-2">{student.genero === 'M' ? 'Masculino' : (student.genero === 'F' ? 'Femenino' : student.genero)}</span></div>
+              <div className="border-b border-gray-300 flex justify-start">9. Grado/Sección: <span className="font-bold ml-2">{student.grado}</span></div>
+              <div className="border-b border-gray-300 flex justify-start">10. Turno: <span className="font-bold ml-2">{student.turno || '_________'}</span></div>
             </div>
           </div>
 

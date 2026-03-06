@@ -56,16 +56,15 @@ export const Instrument003 = React.forwardRef<HTMLDivElement, Instrument003Props
             />
           </div>
 
-          {/* Datos Generales */}
           <div className="grid grid-cols-[3fr_1fr] gap-x-4 mb-3 text-[9px]">
-            <div className="border-b border-black flex justify-between">1.Nombre del Centro Educativo: <span className="font-bold uppercase ml-2">{schoolName}</span></div>
-            <div className="border-b border-black flex justify-between">2. Código del C.E: <span className="font-bold ml-2">{config.codigoCe}</span></div>
+            <div className="border-b border-black flex justify-start">1.Nombre del Centro Educativo: <span className="font-bold uppercase ml-2">{schoolName}</span></div>
+            <div className="border-b border-black flex justify-start">2. Código del C.E: <span className="font-bold ml-2">{config.codigoCe}</span></div>
           </div>
           <div className="grid grid-cols-[1fr_1fr_1fr_1fr] gap-x-4 mb-4 text-[9px]">
-            <div className="border-b border-black flex justify-between">3. Departamento: <span className="font-bold ml-1">{config.departamento}</span></div>
-            <div className="border-b border-black flex justify-between">4. Municipio: <span className="font-bold ml-1">{config.municipio}</span></div>
-            <div className="border-b border-black flex justify-between">5. Distrito: <span className="font-bold ml-1">{config.distrito}</span></div>
-            <div className="border-b border-black flex justify-between">6. Mes/Año: <span className="font-bold ml-1 uppercase">{period}</span></div>
+            <div className="border-b border-black flex justify-start">3. Departamento: <span className="font-bold ml-1">{config.departamento}</span></div>
+            <div className="border-b border-black flex justify-start">4. Municipio: <span className="font-bold ml-1">{config.municipio}</span></div>
+            <div className="border-b border-black flex justify-start">5. Distrito: <span className="font-bold ml-1">{config.distrito}</span></div>
+            <div className="border-b border-black flex justify-start">6. Mes/Año: <span className="font-bold ml-1 uppercase">{period}</span></div>
           </div>
 
           {/* Tabla Principal */}

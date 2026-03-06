@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, supabaseAdmin } from '../lib/supabase';
 import DashboardLayout from '../layouts/DashboardLayout';
 import { Notification } from '../components/Notification';
+import ChangePasswordModal from '../components/ChangePasswordModal';
 import { 
   Card, CardBody, Button, Input, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, 
   Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Spinner, Chip
 } from "@heroui/react";
-import { Plus, Pencil, Trash2, Users, AlertCircle } from 'lucide-react';
+import { Plus, Pencil, Trash2, Users, AlertCircle, Key, Eye, EyeOff } from 'lucide-react';
 
 export default function ManageTeachers() {
   const [teachers, setTeachers] = useState<any[]>([]);
@@ -15,10 +16,13 @@ export default function ManageTeachers() {
   
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const { isOpen: isDelOpen, onOpen: onDelOpen, onOpenChange: onDelOpenChange } = useDisclosure();
+  const { isOpen: isPassOpen, onOpen: onPassOpen, onOpenChange: onPassOpenChange } = useDisclosure();
   
-  const [newTeacher, setNewTeacher] = useState({ id: '', nombre: '', email: '', group_ids: [] as string[] });
+  const [newTeacher, setNewTeacher] = useState({ id: '', nombre: '', email: '', group_ids: [] as string[], password: '' });
   const [teacherToDelete, setTeacherToDelete] = useState<string | null>(null);
+  const [selectedProfileId, setSelectedProfileId] = useState<string | undefined>(undefined);
   const [isEditing, setIsEditing] = useState(false);
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
 
   const fetchData = async () => {
@@ -27,7 +31,7 @@ export default function ManageTeachers() {
       const { data: gData } = await supabase.from('grupos').select('*').order('nombre');
       setGroups(gData || []);
       
-      const { data: tData } = await supabase.from('docentes').select('*, docentes_grupos(grupo_id)').order('nombre');
+      const { data: tData } = await supabase.from('docentes').select('*, docentes_grupos(grupo_id), perfiles(id)').order('nombre');
       setTeachers(tData || []);
     } catch (error) { console.error(error); } finally { setLoading(false); }
   };
@@ -40,54 +44,98 @@ export default function ManageTeachers() {
       let teacherId = newTeacher.id;
 
       if (isEditing) {
-        await supabase.from('docentes').update(payload).eq('id', teacherId);
+        const { error: uError } = await supabase.from('docentes').update(payload).eq('id', teacherId);
+        if (uError) throw uError;
         await supabase.from('docentes_grupos').delete().eq('docente_id', teacherId);
       } else {
+        if (!newTeacher.password || newTeacher.password.length < 6) {
+          throw new Error("La contraseña debe tener al menos 6 caracteres.");
+        }
+
+        // 1. Crear el usuario en Auth (usando el admin client para evitar logout)
+        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+          email: newTeacher.email.toLowerCase(),
+          password: newTeacher.password,
+          email_confirm: true
+        });
+        if (authError) throw authError;
+
+        // 2. Crear el docente
         const { data, error } = await supabase.from('docentes').insert(payload).select().single();
         if (error) throw error;
         teacherId = data.id;
+
+        // 3. Crear el perfil vinculado
+        const { error: pError } = await supabase.from('perfiles').insert([{
+          id: authData.user!.id,
+          username: newTeacher.email.toLowerCase().split('@')[0],
+          full_name: newTeacher.nombre.toUpperCase(),
+          role: 'docente',
+          teacher_id: teacherId
+        }]);
+        if (pError) throw pError;
       }
 
+      // Asignar grupos
       if (newTeacher.group_ids.length > 0) {
         const rels = newTeacher.group_ids.map(gid => ({ docente_id: teacherId, grupo_id: gid }));
         await supabase.from('docentes_grupos').insert(rels);
       }
 
-      setNotification({ message: "Docente actualizado", type: 'success' });
+      setNotification({ message: "Éxito al guardar docente", type: 'success' });
       fetchData();
       onClose();
     } catch (error: any) { setNotification({ message: "Error: " + error.message, type: 'error' }); }
   };
 
-  const confirmDelete = (id: string) => {
-    setTeacherToDelete(id);
-    onDelOpen();
-  };
+  const confirmDelete = (id: string) => { setTeacherToDelete(id); onDelOpen(); };
 
   const handleDelete = async (onClose: () => void) => {
     if (!teacherToDelete) return;
     try {
-      await supabase.from('docentes').delete().eq('id', teacherToDelete);
-      setNotification({ message: "Docente eliminado", type: 'success' });
+      // 1. Buscar el ID del perfil (Auth User ID) antes de borrar el docente
+      const { data: profile } = await supabase
+        .from('perfiles')
+        .select('id')
+        .eq('teacher_id', teacherToDelete)
+        .single();
+
+      // 2. Si existe un perfil, borrar el usuario de Auth usando el cliente admin
+      if (profile?.id) {
+        const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(profile.id);
+        if (authError) {
+          console.warn("Aviso: El usuario de Auth no pudo ser eliminado o ya no existía.");
+        }
+      }
+
+      // 3. Borrar el docente (la cascada en SQL se encarga de docentes_grupos y perfiles)
+      const { error: tError } = await supabase.from('docentes').delete().eq('id', teacherToDelete);
+      if (tError) throw tError;
+
+      setNotification({ message: "Docente y cuenta de acceso eliminados", type: 'success' });
       fetchData();
       onClose();
-    } catch (error: any) { setNotification({ message: "Error: " + error.message, type: 'error' }); }
+    } catch (error: any) { 
+      console.error("Error al eliminar docente:", error);
+      setNotification({ message: "Error: " + error.message, type: 'error' }); 
+    }
   };
 
   const handleOpenModal = (teacher?: any) => {
     if (teacher) {
-      setNewTeacher({ 
-        id: teacher.id, 
-        nombre: teacher.nombre, 
-        email: teacher.email, 
-        group_ids: teacher.docentes_grupos?.map((dg: any) => dg.grupo_id) || [] 
-      });
+      setNewTeacher({ id: teacher.id, nombre: teacher.nombre, email: teacher.email, group_ids: teacher.docentes_grupos?.map((dg: any) => dg.grupo_id) || [], password: '' });
       setIsEditing(true);
     } else {
-      setNewTeacher({ id: '', nombre: '', email: '', group_ids: [] });
+      setNewTeacher({ id: '', nombre: '', email: '', group_ids: [], password: '' });
       setIsEditing(false);
     }
     onOpen();
+  };
+
+  const handleResetPassword = (teacher: any) => {
+    const profileId = teacher.perfiles?.[0]?.id;
+    if (profileId) { setSelectedProfileId(profileId); onPassOpen(); }
+    else setNotification({ message: "No hay perfil de usuario para este docente.", type: 'error' });
   };
 
   return (
@@ -122,6 +170,7 @@ export default function ManageTeachers() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
+                      <Button isIconOnly size="sm" variant="light" color="warning" onPress={() => handleResetPassword(t)} title="Resetear Clave"><Key size={16} /></Button>
                       <Button isIconOnly size="sm" variant="light" color="primary" onPress={() => handleOpenModal(t)}><Pencil size={16} /></Button>
                       <Button isIconOnly size="sm" variant="light" color="danger" onPress={() => confirmDelete(t.id)}><Trash2 size={16} /></Button>
                     </div>
@@ -134,53 +183,44 @@ export default function ManageTeachers() {
       </Card>
 
       <Modal isOpen={isOpen} onOpenChange={onOpenChange} backdrop="blur">
-        <ModalContent>
-          {(onClose) => (
+        <ModalContent>{(onClose) => (
             <>
               <ModalHeader className="border-b bg-gray-50"><h2 className="text-lg font-black uppercase text-[#1e3b8a]">{isEditing ? 'Editar' : 'Registrar'} Docente</h2></ModalHeader>
               <ModalBody className="py-6 space-y-4 text-slate-900">
                 <Input label="Nombre Completo" variant="bordered" value={newTeacher.nombre} onValueChange={(v) => setNewTeacher({...newTeacher, nombre: v})} />
                 <Input label="Email Institucional" variant="bordered" value={newTeacher.email} onValueChange={(v) => setNewTeacher({...newTeacher, email: v})} />
+                {!isEditing && (
+                  <Input label="Contraseña" variant="bordered" type={isPasswordVisible ? "text" : "password"} value={newTeacher.password} onValueChange={(v) => setNewTeacher({...newTeacher, password: v})} 
+                  endContent={<button type="button" onClick={() => setIsPasswordVisible(!isPasswordVisible)}>{isPasswordVisible ? <EyeOff size={20} className="text-slate-400" /> : <Eye size={20} className="text-slate-400" />}</button>} />
+                )}
                 <div className="space-y-2">
                   <p className="text-xs font-black text-gray-400 uppercase">Grupos Asignados</p>
                   <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto border p-3 rounded-xl">
                     {groups.map(g => (
                       <label key={g.id} className="flex items-center gap-2 text-xs font-bold cursor-pointer hover:bg-gray-50 p-1 rounded">
-                        <input 
-                          type="checkbox" 
-                          checked={newTeacher.group_ids.includes(g.id)}
-                          onChange={(e) => {
+                        <input type="checkbox" checked={newTeacher.group_ids.includes(g.id)} onChange={(e) => {
                             const ids = e.target.checked ? [...newTeacher.group_ids, g.id] : newTeacher.group_ids.filter(id => id !== g.id);
                             setNewTeacher({...newTeacher, group_ids: ids});
-                          }}
-                        /> {g.nombre}
+                          }} /> {g.nombre}
                       </label>
                     ))}
                   </div>
                 </div>
               </ModalBody>
-              <ModalFooter className="bg-gray-50 border-t p-4">
-                <Button variant="light" onPress={onClose} className="font-bold uppercase text-xs">Cancelar</Button>
-                <Button color="primary" onPress={() => handleSave(onClose)} className="bg-[#1e3b8a] font-black uppercase text-xs shadow-lg">Guardar</Button>
-              </ModalFooter>
+              <ModalFooter className="bg-gray-50 border-t p-4"><Button variant="light" onPress={onClose}>Cancelar</Button><Button color="primary" onPress={() => handleSave(onClose)} className="bg-[#1e3b8a]">Guardar</Button></ModalFooter>
             </>
-          )}
-        </ModalContent>
+        )}</ModalContent>
       </Modal>
 
+      <ChangePasswordModal isOpen={isPassOpen} onOpenChange={onPassOpenChange} targetUserId={selectedProfileId} />
       <Modal isOpen={isDelOpen} onOpenChange={onDelOpenChange} size="sm" backdrop="blur">
-        <ModalContent>
-          {(onClose) => (
+        <ModalContent>{(onClose) => (
             <>
               <ModalHeader className="flex flex-col gap-1 text-center"><AlertCircle className="mx-auto text-red-500 mb-2" size={40} /><h2 className="text-xl font-black uppercase text-red-600">¿Eliminar Docente?</h2></ModalHeader>
               <ModalBody className="text-center text-gray-500 font-bold text-sm leading-relaxed"><p>Se perderá la vinculación con sus grupos asignados.</p></ModalBody>
-              <ModalFooter className="flex justify-center gap-4 p-6">
-                <Button variant="flat" onPress={onClose} className="font-black uppercase text-xs">Cancelar</Button>
-                <Button color="danger" onPress={() => handleDelete(onClose)} className="font-black uppercase text-xs shadow-lg">Confirmar</Button>
-              </ModalFooter>
+              <ModalFooter className="flex justify-center gap-4 p-6"><Button variant="flat" onPress={onClose}>Cancelar</Button><Button color="danger" onPress={() => handleDelete(onClose)}>Confirmar</Button></ModalFooter>
             </>
-          )}
-        </ModalContent>
+        )}</ModalContent>
       </Modal>
     </DashboardLayout>
   );

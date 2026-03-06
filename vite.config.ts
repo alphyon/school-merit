@@ -12,9 +12,10 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg', 'Logo_oficial_del_Ministerio_de_Educación_de_El_Salvador.png', 'vite.svg'],
       manifest: {
-        name: 'Sistema de Gestión Escolar',
-        short_name: 'SGE-Escuela',
-        description: 'Gestión de méritos y deméritos escolares',
+        name: 'Sistema de Gestión de Deméritos',
+        short_name: 'Deméritos',
+        description: 'Gestión de deméritos escolares',
+
         theme_color: '#1e3b8a',
         background_color: '#ffffff',
         display: 'standalone',

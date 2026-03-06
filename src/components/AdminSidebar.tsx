@@ -19,7 +19,7 @@ export default function AdminSidebar() {
   const location = useLocation();
   const {isOpen, onOpen, onOpenChange} = useDisclosure();
   const [adminData, setAdminData] = useState<any>(null);
-  const [schoolName, setSchoolName] = useState('Sistema de Gestión de Méritos');
+  const [schoolName, setSchoolName] = useState('Sistema de Gestión de Deméritos');
 
   const fetchAdmin = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -64,7 +64,7 @@ export default function AdminSidebar() {
             )}
           </div>
           <div>
-            <h1 className="text-slate-900 dark:text-white text-[11px] font-black leading-tight uppercase tracking-tighter">Gestión de Méritos</h1>
+            <h1 className="text-slate-900 dark:text-white text-[11px] font-black leading-tight uppercase tracking-tighter">Gestión de Deméritos</h1>
             <p className="text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-widest truncate max-w-[120px]">{schoolName}</p>
           </div>
         </div>

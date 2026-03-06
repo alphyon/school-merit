@@ -87,7 +87,7 @@ export default function AppHeader({ role }: { role: string }) {
           <GraduationCap className="text-2xl text-white" />
         )}
         <div className="flex flex-col overflow-hidden">
-          <p className="text-[8px] font-black tracking-widest uppercase opacity-70 leading-none">Gestión de Méritos</p>
+          <p className="text-[8px] font-black tracking-widest uppercase opacity-70 leading-none">Gestión de Deméritos</p>
           <p className="text-[10px] font-bold uppercase truncate max-w-[100px] sm:max-w-[200px] leading-tight">{settings.name}</p>
         </div>
       </NavbarBrand>

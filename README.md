@@ -1,4 +1,4 @@
-# Sistema de Gestión Escolar 🏫
+# Sistema de Gestión de Deméritos 🏫
 
 Plataforma integral para el registro de deméritos, redenciones y gestión de conducta estudiantil en escuelas públicas. Construido con **React 19**, **Tailwind CSS v4**, **HeroUI** y **Supabase**.
 
@@ -61,4 +61,4 @@ Este proyecto está optimizado para capas gratuitas.
 - El sistema utiliza **RLS (Row Level Security)** de Supabase para proteger los datos escolares.
 - Al cerrar sesión, se limpian todos los datos temporales del navegador.
 
-© 2024 Sistema de Gestión Escolar.
+© 2026 Sistema de Gestión de Deméritos.

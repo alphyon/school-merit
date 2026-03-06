@@ -41,7 +41,7 @@ export default function NotFound() {
           </CardBody>
         </Card>
 
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Sistema de Gestión de Méritos</p>
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Sistema de Gestión de Deméritos</p>
       </div>
     </div>
   );

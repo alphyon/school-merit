@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input } from "@heroui/react";
 import { Eye, EyeOff } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { supabase, supabaseAdmin } from '../lib/supabase';
 import { Notification } from './Notification';
 
 interface ChangePasswordProps {
@@ -30,20 +30,26 @@ export default function ChangePasswordModal({ isOpen, onOpenChange, targetUserId
     setIsSubmitting(true);
     try {
       if (targetUserId) {
-        const { error } = await supabase.auth.admin.updateUserById(targetUserId, { password: newPassword });
+        // El Administrador fuerza la clave de OTRO usando supabaseAdmin
+        const { error } = await supabaseAdmin.auth.admin.updateUserById(targetUserId, { 
+          password: newPassword 
+        });
         if (error) throw error;
+        setNotification({ message: "Contraseña forzada con éxito por el Admin", type: 'success' });
       } else {
+        // El usuario (Docente o Admin) cambia su PROPIA clave usando el cliente normal que tiene la sesión
         const { error } = await supabase.auth.updateUser({ password: newPassword });
         if (error) throw error;
+        setNotification({ message: "Tu contraseña ha sido actualizada con éxito", type: 'success' });
       }
 
-      setNotification({ message: "Contraseña actualizada con éxito", type: 'success' });
       setTimeout(() => {
         onClose();
         setNewPassword("");
         setConfirmPassword("");
       }, 1500);
     } catch (error: any) {
+      console.error("Error al cambiar contraseña:", error);
       setNotification({ message: "Error: " + error.message, type: 'error' });
     } finally {
       setIsSubmitting(false);
@@ -57,7 +63,7 @@ export default function ChangePasswordModal({ isOpen, onOpenChange, targetUserId
           <>
             {notification && <Notification message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
             <ModalHeader className="flex flex-col gap-1 uppercase font-black text-sm tracking-widest">
-              {targetUserId ? 'Resetear Contraseña de Usuario' : 'Cambiar mi Contraseña'}
+              {targetUserId ? 'Forzar Nueva Contraseña' : 'Cambiar mi Contraseña'}
             </ModalHeader>
             <ModalBody className="space-y-4 py-6">
               <Input
@@ -68,11 +74,7 @@ export default function ChangePasswordModal({ isOpen, onOpenChange, targetUserId
                 onValueChange={setNewPassword}
                 endContent={
                   <button className="focus:outline-none" type="button" onClick={() => setIsVisible(!isVisible)}>
-                    {isVisible ? (
-                      <EyeOff size={20} className="text-slate-400" />
-                    ) : (
-                      <Eye size={20} className="text-slate-400" />
-                    )}
+                    {isVisible ? <EyeOff size={20} className="text-slate-400" /> : <Eye size={20} className="text-slate-400" />}
                   </button>
                 }
               />
@@ -87,7 +89,7 @@ export default function ChangePasswordModal({ isOpen, onOpenChange, targetUserId
             <ModalFooter>
               <Button variant="light" onPress={onClose} className="font-bold">Cancelar</Button>
               <Button color="primary" className="bg-[#1e3b8a] font-bold" isLoading={isSubmitting} onPress={() => handleUpdate(onClose)}>
-                Actualizar Contraseña
+                Actualizar Clave
               </Button>
             </ModalFooter>
           </>

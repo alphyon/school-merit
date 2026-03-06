@@ -56,25 +56,24 @@ export const Instrument002 = React.forwardRef<HTMLDivElement, Instrument002Props
             <img src="/Logo_oficial_del_Ministerio_de_Educación_de_El_Salvador.png" className="h-16 w-auto object-contain" alt="MINED" />
           </div>
 
-          {/* Datos Cabecera (Réplica PDF) */}
           <div className="mb-4 text-[9px] leading-relaxed">
             <div className="flex justify-between mb-1">
-              <div className="w-[70%] border-b border-black flex justify-between">1.Nombre del Centro Educativo: <span className="font-bold uppercase ml-2">{schoolName}</span></div>
-              <div className="w-[28%] border-b border-black flex justify-between">2. Código del C.E: <span className="font-bold ml-2">{config.codigoCe}</span></div>
+              <div className="w-[70%] border-b border-black flex justify-start">1.Nombre del Centro Educativo: <span className="font-bold uppercase ml-2">{schoolName}</span></div>
+              <div className="w-[28%] border-b border-black flex justify-start">2. Código del C.E: <span className="font-bold ml-2">{config.codigoCe}</span></div>
             </div>
             <div className="flex justify-between mb-1">
-              <div className="w-[30%] border-b border-black flex justify-between">3. Departamento del C.E.: <span className="font-bold ml-1">{config.departamento}</span></div>
-              <div className="w-[30%] border-b border-black flex justify-between">4. Municipio: <span className="font-bold ml-1">{config.municipio}</span></div>
-              <div className="w-[38%] border-b border-black flex justify-between">5. Distrito: <span className="font-bold ml-1">{config.distrito}</span></div>
+              <div className="w-[30%] border-b border-black flex justify-start">3. Departamento del C.E.: <span className="font-bold ml-1">{config.departamento}</span></div>
+              <div className="w-[30%] border-b border-black flex justify-start">4. Municipio: <span className="font-bold ml-1">{config.municipio}</span></div>
+              <div className="w-[38%] border-b border-black flex justify-start">5. Distrito: <span className="font-bold ml-1">{config.distrito}</span></div>
             </div>
             <div className="flex justify-between mb-1">
-              <div className="w-[70%] border-b border-black flex justify-between">6. Nombre del docente: <span className="font-bold uppercase ml-2">{teacherName}</span></div>
-              <div className="w-[28%] border-b border-black flex justify-between">7. Mes/Año: <span className="font-bold ml-2">{period}</span></div>
+              <div className="w-[70%] border-b border-black flex justify-start">6. Nombre del docente: <span className="font-bold uppercase ml-2">{teacherName}</span></div>
+              <div className="w-[28%] border-b border-black flex justify-start">7. Mes/Año: <span className="font-bold ml-2">{period}</span></div>
             </div>
             <div className="flex justify-between">
-              <div className="w-[45%] border-b border-black flex justify-between">8. Grado: <span className="font-bold uppercase ml-2">{gradePart}</span></div>
-              <div className="w-[20%] border-b border-black flex justify-between">9. Sección: <span className="font-bold uppercase ml-2">{sectionPart}</span></div>
-              <div className="w-[30%] border-b border-black flex justify-between">10. Turno: <span className="font-bold uppercase ml-2">{shift}</span></div>
+              <div className="w-[45%] border-b border-black flex justify-start">8. Grado: <span className="font-bold uppercase ml-2">{gradePart}</span></div>
+              <div className="w-[20%] border-b border-black flex justify-start">9. Sección: <span className="font-bold uppercase ml-2">{sectionPart}</span></div>
+              <div className="w-[30%] border-b border-black flex justify-start">10. Turno: <span className="font-bold uppercase ml-2">{shift}</span></div>
             </div>
           </div>
 
