@@ -146,11 +146,29 @@ export default function StudentProfile() {
                 <Avatar className="h-24 w-24 border-4 border-gray-50 shadow-lg" name={student?.nombre} />
                 <div className="flex-1 text-center md:text-left">
                   <h1 className="text-2xl font-black uppercase tracking-tighter mb-1">{student?.nombre}</h1>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4">NIE: {student?.nie} | {student?.grupo_nombre}</p>
-                  {stats.balance >= 15 && <Chip color="danger" variant="solid" className="font-black animate-pulse text-[10px]">NO PROMOCIÓN</Chip>}
-                  {stats.balance >= 10 && stats.balance < 15 && <Chip color="warning" variant="solid" className="font-black text-[10px]">SUSPENSIÓN</Chip>}
-                  {stats.balance >= 6 && stats.balance < 10 && <Chip color="warning" variant="flat" className="font-black text-[10px]">AVISO FAMILIA</Chip>}
-                  {stats.balance >= 3 && stats.balance < 6 && <Chip color="primary" variant="flat" className="font-black text-[10px]">ADVERTENCIA</Chip>}
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">NIE: {student?.nie} | {student?.grupo_nombre}</p>
+                  
+                  <div className="flex flex-wrap justify-center md:justify-start gap-6 mb-4">
+                    <div className="flex flex-col">
+                      <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Responsable</span>
+                      <span className="text-xs font-bold text-slate-700 uppercase">{student?.responsable || 'NO REGISTRADO'}</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest">DUI</span>
+                      <span className="text-xs font-bold text-slate-700">{student?.dui_responsable || '---'}</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Contacto</span>
+                      <span className="text-xs font-bold text-[#1e3b8a]">{student?.telefono_responsable || 'SIN TELÉFONO'}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap justify-center md:justify-start gap-2">
+                    {stats.balance >= 15 && <Chip color="danger" variant="solid" className="font-black animate-pulse text-[10px]">NO PROMOCIÓN</Chip>}
+                    {stats.balance >= 10 && stats.balance < 15 && <Chip color="warning" variant="solid" className="font-black text-[10px]">SUSPENSIÓN</Chip>}
+                    {stats.balance >= 6 && stats.balance < 10 && <Chip color="warning" variant="flat" className="font-black text-[10px]">AVISO FAMILIA</Chip>}
+                    {stats.balance >= 3 && stats.balance < 6 && <Chip color="primary" variant="flat" className="font-black text-[10px]">ADVERTENCIA</Chip>}
+                  </div>
                 </div>
                 <Button color="primary" className="bg-[#1e3b8a] font-black uppercase text-[10px] h-12 px-8" startContent={<Printer size={18} />} onPress={() => handlePrint()}>Imprimir</Button>
               </div>

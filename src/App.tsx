@@ -5,6 +5,7 @@ import TeacherReports from './pages/TeacherReports';
 import AdminDashboard from './pages/AdminDashboard';
 import ManageStudents from './pages/ManageStudents';
 import ManageTeachers from './pages/ManageTeachers';
+import ManageAdmins from './pages/ManageAdmins';
 import ManageGroups from './pages/ManageGroups';
 import ManageCatalogs from './pages/ManageCatalogs';
 import AdminSettings from './pages/AdminSettings';
@@ -21,6 +22,7 @@ function App() {
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/estudiantes" element={<ManageStudents />} />
         <Route path="/admin/docentes" element={<ManageTeachers />} />
+        <Route path="/admin/administradores" element={<ManageAdmins />} />
         <Route path="/admin/grupos" element={<ManageGroups />} />
         <Route path="/admin/catalogos" element={<ManageCatalogs />} />
         <Route path="/admin/configuracion" element={<AdminSettings />} />

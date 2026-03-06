@@ -3,67 +3,72 @@ import { supabase } from '../lib/supabase';
 import DashboardLayout from '../layouts/DashboardLayout';
 import { Notification } from '../components/Notification';
 import { 
-  Card, CardBody, Button, Select, SelectItem, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, 
-  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Chip, Spinner
+  Card, CardBody, Button, Input, Select, SelectItem, Table, TableHeader, TableColumn, TableBody, TableRow, TableCell, 
+  Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Spinner
 } from "@heroui/react";
 import { Plus, Pencil, Trash2, Layers, AlertCircle } from 'lucide-react';
+import { z } from 'zod';
+
+const groupSchema = z.object({
+  nombre: z.string().min(2, "Nombre de grupo obligatorio"),
+  grado: z.string().min(1, "Grado obligatorio"),
+  seccion: z.string().min(1, "Sección obligatoria"),
+  turno: z.string().min(1, "Seleccione un turno")
+});
 
 export default function ManageGroups() {
   const [groups, setGroups] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const { isOpen: isDelOpen, onOpen: onDelOpen, onOpenChange: onDelOpenChange } = useDisclosure();
   
-  const [newGroup, setNewGroup] = useState({ id: '', grado: '', seccion: '', turno: 'Matutino' });
+  const [newGroup, setNewGroup] = useState({ id: '', nombre: '', grado: '', seccion: '', turno: 'Matutino' });
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [groupToDelete, setGroupToDelete] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
 
-  const grados = [
-    "Parvularia 4", "Parvularia 5", "Parvularia 6",
-    "1° Grado", "2° Grado", "3° Grado", "4° Grado", "5° Grado", "6° Grado", 
-    "7° Grado", "8° Grado", "9° Grado", 
-    "1er Año Bachillerato", "2do Año Bachillerato", "3er Año Bachillerato"
-  ];
-  const secciones = ["A", "B", "C", "D", "E", "F", "G", "U"];
-  const turnos = ["Matutino", "Vespertino", "Nocturno"];
-
   const fetchData = async () => {
     setLoading(true);
-    const { data } = await supabase.from('grupos').select('*').order('grado').order('seccion');
-    setGroups(data || []);
-    setLoading(false);
+    try {
+      const { data } = await supabase.from('grupos').select('*').order('nombre');
+      setGroups(data || []);
+    } catch (error) { console.error(error); } finally { setLoading(false); }
   };
 
   useEffect(() => { fetchData(); }, []);
 
-  const generateName = (g: string, s: string, t: string) => {
-    return `${g} "${s}" - ${t}`;
-  };
-
   const handleSave = async (onClose: () => void) => {
-    if (!newGroup.grado || !newGroup.seccion || !newGroup.turno) {
-      setNotification({ message: "Complete todos los campos", type: 'error' });
-      return;
-    }
-
     try {
-      const nombreGenerado = generateName(newGroup.grado, newGroup.seccion, newGroup.turno);
-      const payload = { grado: newGroup.grado, seccion: newGroup.seccion, turno: newGroup.turno, nombre: nombreGenerado };
+      setErrors({});
+      const result = groupSchema.safeParse(newGroup);
+      if (!result.success) {
+        const fieldErrors = result.error.flatten().fieldErrors as Record<string, string[] | undefined>;
+        const formattedErrors: Record<string, string> = {};
+        Object.keys(fieldErrors).forEach(key => {
+          const messages = fieldErrors[key];
+          if (messages && messages.length > 0) {
+            formattedErrors[key] = messages[0];
+          }
+        });
+        setErrors(formattedErrors);
+        return;
+      }
+
+      const payload = { 
+        nombre: `${newGroup.grado} "${newGroup.seccion.toUpperCase()}" (${newGroup.turno})`,
+        grado: newGroup.grado,
+        seccion: newGroup.seccion.toUpperCase(),
+        turno: newGroup.turno
+      };
 
       if (isEditing) await supabase.from('grupos').update(payload).eq('id', newGroup.id);
       else await supabase.from('grupos').insert(payload);
       
-      setNotification({ message: "Estructura guardada", type: 'success' });
+      setNotification({ message: "Grupo guardado", type: 'success' });
       fetchData();
       onClose();
     } catch (error: any) { setNotification({ message: "Error: " + error.message, type: 'error' }); }
-  };
-
-  const confirmDelete = (id: string) => {
-    setGroupToDelete(id);
-    onDelOpen();
   };
 
   const handleDelete = async (onClose: () => void) => {
@@ -78,8 +83,9 @@ export default function ManageGroups() {
   };
 
   const handleOpenModal = (group?: any) => {
-    if (group) { setNewGroup({ id: group.id, grado: group.grado || '', seccion: group.seccion || '', turno: group.turno || 'Matutino' }); setIsEditing(true); }
-    else { setNewGroup({ id: '', grado: '', seccion: '', turno: 'Matutino' }); setIsEditing(false); }
+    setErrors({});
+    if (group) { setNewGroup({ ...group }); setIsEditing(true); }
+    else { setNewGroup({ id: '', nombre: '', grado: '', seccion: '', turno: 'Matutino' }); setIsEditing(false); }
     onOpen();
   };
 
@@ -92,24 +98,22 @@ export default function ManageGroups() {
       </div>
 
       <Card className="border-none shadow-sm bg-white min-h-[400px]">
-        <CardBody className="p-0">
+        <CardBody className="p-0 text-slate-900">
           <Table removeWrapper aria-label="Grupos">
             <TableHeader>
+              <TableColumn className="bg-gray-50 font-black text-gray-400 uppercase text-xs">Nombre del Grupo</TableColumn>
               <TableColumn className="bg-gray-50 font-black text-gray-400 uppercase text-xs">Grado</TableColumn>
-              <TableColumn className="bg-gray-50 font-black text-gray-400 uppercase text-xs">Sección</TableColumn>
-              <TableColumn className="bg-gray-50 font-black text-gray-400 uppercase text-xs">Turno</TableColumn>
               <TableColumn className="bg-gray-50 font-black text-gray-400 uppercase text-xs text-right">Acciones</TableColumn>
             </TableHeader>
             <TableBody emptyContent={loading ? <Spinner /> : "No hay grupos registrados."}>
               {groups.map((g) => (
-                <TableRow key={g.id} className="border-b border-gray-50 last:border-none hover:bg-gray-50/50">
-                  <TableCell className="font-bold text-gray-700">{g.grado}</TableCell>
-                  <TableCell><Chip size="sm" variant="flat" color="secondary" className="font-black">{g.seccion}</Chip></TableCell>
-                  <TableCell className="text-xs uppercase font-bold text-gray-500">{g.turno}</TableCell>
+                <TableRow key={g.id} className="border-b border-gray-50 last:border-none">
+                  <TableCell className="font-black uppercase text-xs text-[#1e3b8a]">{g.nombre}</TableCell>
+                  <TableCell className="font-bold text-gray-500 text-xs">{g.grado} "{g.seccion}"</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
                       <Button isIconOnly size="sm" variant="light" color="primary" onPress={() => handleOpenModal(g)}><Pencil size={16} /></Button>
-                      <Button isIconOnly size="sm" variant="light" color="danger" onPress={() => confirmDelete(g.id)}><Trash2 size={16} /></Button>
+                      <Button isIconOnly size="sm" variant="light" color="danger" onPress={() => { setGroupToDelete(g.id); onDelOpen(); }}><Trash2 size={16} /></Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -120,45 +124,40 @@ export default function ManageGroups() {
       </Card>
 
       <Modal isOpen={isOpen} onOpenChange={onOpenChange} backdrop="blur">
-        <ModalContent>
-          {(onClose) => (
+        <ModalContent>{(onClose) => (
             <>
-              <ModalHeader className="border-b bg-gray-50"><h2 className="text-lg font-black uppercase text-[#1e3b8a]">{isEditing ? 'Editar' : 'Crear'} Grupo</h2></ModalHeader>
-              <ModalBody className="py-6 space-y-6 text-slate-900">
-                <Select label="Grado Académico" variant="bordered" selectedKeys={newGroup.grado ? [newGroup.grado] : []} onSelectionChange={(keys) => setNewGroup({...newGroup, grado: Array.from(keys)[0] as string})}>
-                  {grados.map((g) => <SelectItem key={g}>{g}</SelectItem>)}
+              <ModalHeader className="border-b bg-gray-50 font-black uppercase text-[#1e3b8a]">{isEditing ? 'Editar' : 'Registrar'} Grupo</ModalHeader>
+              <ModalBody className="py-6 space-y-4 text-slate-900">
+                <Input 
+                  label="Grado (Ej: 9°)" isRequired variant="bordered" value={newGroup.grado} onValueChange={(v) => setNewGroup({...newGroup, grado: v})}
+                  isInvalid={!!errors.grado} errorMessage={errors.grado}
+                />
+                <Input 
+                  label="Sección (Ej: A)" isRequired variant="bordered" value={newGroup.seccion} onValueChange={(v) => setNewGroup({...newGroup, seccion: v})} 
+                  isInvalid={!!errors.seccion} errorMessage={errors.seccion}
+                />
+                <Select 
+                  label="Turno" isRequired variant="bordered" selectedKeys={[newGroup.turno]} onSelectionChange={(k) => setNewGroup({...newGroup, turno: Array.from(k)[0] as string})}
+                  isInvalid={!!errors.turno} errorMessage={errors.turno}
+                >
+                  <SelectItem key="Matutino" textValue="MATUTINO">MATUTINO</SelectItem>
+                  <SelectItem key="Vespertino" textValue="VESPERTINO">VESPERTINO</SelectItem>
+                  <SelectItem key="Nocturno" textValue="NOCTURNO">NOCTURNO</SelectItem>
                 </Select>
-                <div className="grid grid-cols-2 gap-4">
-                  <Select label="Sección" variant="bordered" selectedKeys={newGroup.seccion ? [newGroup.seccion] : []} onSelectionChange={(keys) => setNewGroup({...newGroup, seccion: Array.from(keys)[0] as string})}>
-                    {secciones.map((s) => <SelectItem key={s}>{s}</SelectItem>)}
-                  </Select>
-                  <Select label="Turno" variant="bordered" selectedKeys={newGroup.turno ? [newGroup.turno] : []} onSelectionChange={(keys) => setNewGroup({...newGroup, turno: Array.from(keys)[0] as string})}>
-                    {turnos.map((t) => <SelectItem key={t}>{t}</SelectItem>)}
-                  </Select>
-                </div>
               </ModalBody>
-              <ModalFooter className="bg-gray-50 border-t p-4">
-                <Button variant="light" onPress={onClose} className="font-bold uppercase text-xs">Cancelar</Button>
-                <Button color="primary" onPress={() => handleSave(onClose)} className="bg-[#1e3b8a] font-black uppercase text-xs shadow-lg">Guardar</Button>
-              </ModalFooter>
+              <ModalFooter className="bg-gray-50 border-t p-4"><Button variant="light" onPress={onClose}>Cancelar</Button><Button color="primary" onPress={() => handleSave(onClose)} className="bg-[#1e3b8a]">Guardar</Button></ModalFooter>
             </>
-          )}
-        </ModalContent>
+        )}</ModalContent>
       </Modal>
 
       <Modal isOpen={isDelOpen} onOpenChange={onDelOpenChange} size="sm" backdrop="blur">
-        <ModalContent>
-          {(onClose) => (
+        <ModalContent>{(onClose) => (
             <>
-              <ModalHeader className="flex flex-col gap-1 text-center"><AlertCircle className="mx-auto text-red-500 mb-2" size={40} /><h2 className="text-xl font-black uppercase text-red-600">¿Eliminar Grupo?</h2></ModalHeader>
-              <ModalBody className="text-center text-gray-500 font-bold text-sm leading-relaxed"><p>Asegúrese de que el grupo no tenga alumnos vinculados antes de proceder.</p></ModalBody>
-              <ModalFooter className="flex justify-center gap-4 p-6">
-                <Button variant="flat" onPress={onClose} className="font-black uppercase text-xs">Cancelar</Button>
-                <Button color="danger" onPress={() => handleDelete(onClose)} className="font-black uppercase text-xs shadow-lg">Confirmar</Button>
-              </ModalFooter>
+              <ModalHeader className="flex flex-col gap-1 text-center"><AlertCircle className="mx-auto text-red-500 mb-2" size={40} /><h2 className="text-xl font-black uppercase text-red-600">¿Eliminar?</h2></ModalHeader>
+              <ModalBody className="text-center text-gray-500 font-bold text-sm leading-relaxed"><p>Asegúrate de que el grupo no tenga alumnos asignados.</p></ModalBody>
+              <ModalFooter className="flex justify-center gap-4 p-6"><Button variant="flat" onPress={onClose}>No</Button><Button color="danger" onPress={() => handleDelete(onClose)}>Sí, eliminar</Button></ModalFooter>
             </>
-          )}
-        </ModalContent>
+        )}</ModalContent>
       </Modal>
     </DashboardLayout>
   );

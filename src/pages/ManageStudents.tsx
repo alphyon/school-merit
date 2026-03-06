@@ -9,6 +9,20 @@ import {
 } from "@heroui/react";
 import { Plus, Search, Pencil, Trash2, Users, FileSpreadsheet, Filter, Eye, AlertCircle } from 'lucide-react';
 import { importStudentsFromCSV, type ImportResult } from '../utils/importStudents';
+import { z } from 'zod';
+
+// Esquema de validación con Zod
+const studentSchema = z.object({
+  nie: z.string().min(1, "El NIE es obligatorio"),
+  nombre: z.string().min(3, "Nombre muy corto (mín. 3 caracteres)"),
+  responsable: z.string().min(3, "Nombre de responsable obligatorio"),
+  dui_responsable: z.string().min(1, "El DUI es obligatorio"),
+  grupo_id: z.string().min(1, "Debe seleccionar un grupo"),
+  genero: z.string().min(1, "Seleccione un género"),
+  turno: z.string().min(1, "Seleccione un turno"),
+  estado: z.string().min(1, "Seleccione un estado"),
+  telefono_responsable: z.string().optional()
+});
 
 export default function ManageStudents() {
   const navigate = useNavigate();
@@ -23,7 +37,20 @@ export default function ManageStudents() {
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
   const { isOpen: isDelOpen, onOpen: onDelOpen, onOpenChange: onDelOpenChange } = useDisclosure();
   
-  const [newStudent, setNewStudent] = useState({ id: '', nombre: '', nie: '', grupo_id: '', genero: '', turno: 'Matutino', estado: 'activo' });
+  const [newStudent, setNewStudent] = useState({ 
+    id: '', 
+    nombre: '', 
+    nie: '', 
+    grupo_id: '', 
+    genero: '', 
+    turno: 'Matutino', 
+    estado: 'activo',
+    responsable: '',
+    telefono_responsable: '',
+    dui_responsable: ''
+  });
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [studentToDelete, setStudentToDelete] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [notification, setNotification] = useState<{message: string, type: 'success' | 'error'} | null>(null);
@@ -49,13 +76,43 @@ export default function ManageStudents() {
 
   const handleSave = async (onClose: () => void) => {
     try {
-      const payload = { nombre: newStudent.nombre.toUpperCase(), nie: newStudent.nie, grupo_id: newStudent.grupo_id, genero: newStudent.genero, turno: newStudent.turno, estado: newStudent.estado };
+      setErrors({});
+      const result = studentSchema.safeParse(newStudent);
+      
+      if (!result.success) {
+        const fieldErrors = result.error.flatten().fieldErrors as Record<string, string[] | undefined>;
+        const formattedErrors: Record<string, string> = {};
+        Object.keys(fieldErrors).forEach(key => {
+          const messages = fieldErrors[key];
+          if (messages && messages.length > 0) {
+            formattedErrors[key] = messages[0];
+          }
+        });
+        setErrors(formattedErrors);
+        return;
+      }
+
+      const payload = { 
+        nombre: newStudent.nombre.trim().toUpperCase(), 
+        nie: newStudent.nie.trim(), 
+        grupo_id: newStudent.grupo_id, 
+        genero: newStudent.genero, 
+        turno: newStudent.turno, 
+        estado: newStudent.estado,
+        responsable: newStudent.responsable.trim().toUpperCase(),
+        telefono_responsable: newStudent.telefono_responsable.trim(),
+        dui_responsable: newStudent.dui_responsable.trim()
+      };
+
       if (isEditing) await supabase.from('estudiantes').update(payload).eq('id', newStudent.id);
       else await supabase.from('estudiantes').insert(payload);
+      
       setNotification({ message: "Guardado exitosamente", type: 'success' });
       fetchData();
       onClose();
-    } catch (error: any) { setNotification({ message: "Error: " + error.message, type: 'error' }); }
+    } catch (error: any) { 
+      setNotification({ message: "Error: " + error.message, type: 'error' }); 
+    }
   };
 
   const confirmDelete = (id: string) => { setStudentToDelete(id); onDelOpen(); };
@@ -82,8 +139,15 @@ export default function ManageStudents() {
   };
 
   const handleOpenModal = (student?: any) => {
+    setErrors({});
     if (student) { setNewStudent({ ...student }); setIsEditing(true); }
-    else { setNewStudent({ id: '', nombre: '', nie: '', grupo_id: '', genero: '', turno: 'Matutino', estado: 'activo' }); setIsEditing(false); }
+    else { 
+      setNewStudent({ 
+        id: '', nombre: '', nie: '', grupo_id: '', genero: '', turno: 'Matutino', estado: 'activo',
+        responsable: '', telefono_responsable: '', dui_responsable: ''
+      }); 
+      setIsEditing(false); 
+    }
     onOpen();
   };
 
@@ -164,26 +228,58 @@ export default function ManageStudents() {
           {(onClose) => (
             <>
               <ModalHeader className="border-b bg-gray-50 font-black uppercase text-[#1e3b8a]">Ficha de Estudiante</ModalHeader>
-              <ModalBody className="py-6 space-y-4 text-slate-900">
-                <Input label="NIE" variant="bordered" value={newStudent.nie} onValueChange={(v) => setNewStudent({...newStudent, nie: v})} />
-                <Input label="Nombre" variant="bordered" value={newStudent.nombre} onValueChange={(v) => setNewStudent({...newStudent, nombre: v})} />
-                <div className="grid grid-cols-2 gap-4">
-                  <Select label="Sección" variant="bordered" selectedKeys={newStudent.grupo_id ? [newStudent.grupo_id] : []} onSelectionChange={(keys) => setNewStudent({...newStudent, grupo_id: Array.from(keys)[0] as string})} items={groups}>
-                    {(g) => <SelectItem key={g.id} textValue={g.nombre}>{g.nombre}</SelectItem>}
-                  </Select>
-                  <Select label="Estado" variant="bordered" selectedKeys={[newStudent.estado]} onSelectionChange={(keys) => setNewStudent({...newStudent, estado: Array.from(keys)[0] as string})}>
-                    <SelectItem key="activo" textValue="ACTIVO">ACTIVO</SelectItem>
-                    <SelectItem key="inactivo" textValue="INACTIVO">INACTIVO</SelectItem>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <Select label="Género" variant="bordered" selectedKeys={newStudent.genero ? [newStudent.genero] : []} onSelectionChange={(keys) => setNewStudent({...newStudent, genero: Array.from(keys)[0] as string})}>
-                    <SelectItem key="M">MASCULINO</SelectItem><SelectItem key="F">FEMENINO</SelectItem>
-                  </Select>
-                  <Select label="Turno" variant="bordered" selectedKeys={newStudent.turno ? [newStudent.turno] : []} onSelectionChange={(keys) => setNewStudent({...newStudent, turno: Array.from(keys)[0] as string})}>
-                    <SelectItem key="Matutino">MATUTINO</SelectItem><SelectItem key="Vespertino">VESPERTINO</SelectItem><SelectItem key="Nocturno">NOCTURNO</SelectItem>
-                  </Select>
-                </div>
+              <ModalBody className="py-6 space-y-4 text-slate-900 overflow-y-auto max-h-[70vh]">
+                <Input 
+                  label="NIE" isRequired variant="bordered" value={newStudent.nie} onValueChange={(v) => setNewStudent({...newStudent, nie: v})}
+                  isInvalid={!!errors.nie} errorMessage={errors.nie}
+                />
+                <Input 
+                  label="Nombre Estudiante" isRequired variant="bordered" value={newStudent.nombre} onValueChange={(v) => setNewStudent({...newStudent, nombre: v})} 
+                  isInvalid={!!errors.nombre} errorMessage={errors.nombre}
+                />
+                
+                <Input 
+                  label="Nombre del Responsable" isRequired variant="bordered" value={newStudent.responsable} onValueChange={(v) => setNewStudent({...newStudent, responsable: v})} 
+                  isInvalid={!!errors.responsable} errorMessage={errors.responsable}
+                />
+                <Input 
+                  label="DUI del Responsable" isRequired variant="bordered" value={newStudent.dui_responsable} onValueChange={(v) => setNewStudent({...newStudent, dui_responsable: v})} 
+                  isInvalid={!!errors.dui_responsable} errorMessage={errors.dui_responsable}
+                />
+                <Input label="Teléfono de Contacto" variant="bordered" value={newStudent.telefono_responsable} onValueChange={(v) => setNewStudent({...newStudent, telefono_responsable: v})} />
+
+                <Select 
+                  label="Sección / Grupo" isRequired variant="bordered" selectedKeys={newStudent.grupo_id ? [newStudent.grupo_id] : []} onSelectionChange={(keys) => setNewStudent({...newStudent, grupo_id: Array.from(keys)[0] as string})} items={groups}
+                  isInvalid={!!errors.grupo_id} errorMessage={errors.grupo_id}
+                >
+                  {(g) => <SelectItem key={g.id} textValue={g.nombre}>{g.nombre}</SelectItem>}
+                </Select>
+
+                <Select 
+                  label="Estado de Matrícula" isRequired variant="bordered" selectedKeys={[newStudent.estado]} onSelectionChange={(keys) => setNewStudent({...newStudent, estado: Array.from(keys)[0] as string})}
+                  isInvalid={!!errors.estado} errorMessage={errors.estado}
+                >
+                  <SelectItem key="activo" textValue="ACTIVO">ACTIVO</SelectItem>
+                  <SelectItem key="inactivo" textValue="INACTIVO">INACTIVO</SelectItem>
+                </Select>
+
+                <Select 
+                  label="Género" isRequired variant="bordered" selectedKeys={newStudent.genero ? [newStudent.genero] : []} onSelectionChange={(keys) => setNewStudent({...newStudent, genero: Array.from(keys)[0] as string})}
+                  isInvalid={!!errors.genero} errorMessage={errors.genero}
+                >
+                  <SelectItem key="M" textValue="MASCULINO">MASCULINO</SelectItem>
+                  <SelectItem key="F" textValue="FEMENINO">FEMENINO</SelectItem>
+                </Select>
+
+                <Select 
+                  label="Turno" isRequired variant="bordered" selectedKeys={newStudent.turno ? [newStudent.turno] : []} onSelectionChange={(keys) => setNewStudent({...newStudent, turno: Array.from(keys)[0] as string})}
+                  isInvalid={!!errors.turno} errorMessage={errors.turno}
+                >
+                  <SelectItem key="Matutino" textValue="MATUTINO">MATUTINO</SelectItem>
+                  <SelectItem key="Vespertino" textValue="VESPERTINO">VESPERTINO</SelectItem>
+                  <SelectItem key="Nocturno" textValue="NOCTURNO">NOCTURNO</SelectItem>
+                  <SelectItem key="Distancia" textValue="DISTANCIA">DISTANCIA</SelectItem>
+                </Select>
               </ModalBody>
               <ModalFooter className="bg-gray-50 border-t p-4"><Button variant="light" onPress={onClose} className="font-bold">Cerrar</Button><Button color="primary" onPress={() => handleSave(onClose)} className="bg-[#1e3b8a] font-black uppercase text-xs">Guardar</Button></ModalFooter>
             </>

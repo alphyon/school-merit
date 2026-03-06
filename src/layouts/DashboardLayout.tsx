@@ -6,7 +6,7 @@ import {
 } from "@heroui/react";
 import { 
   LayoutDashboard, Users, GraduationCap, Layers, Shield, Settings, 
-  LogOut, Menu, X, BarChart, Lock
+  LogOut, Menu, X, BarChart, Lock, ShieldCheck
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import ChangePasswordModal from '../components/ChangePasswordModal';
@@ -82,6 +82,7 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
     { label: 'Inicio', path: '/admin', icon: <LayoutDashboard size={20} /> },
     { label: 'Estudiantes', path: '/admin/estudiantes', icon: <Users size={20} /> },
     { label: 'Docentes', path: '/admin/docentes', icon: <GraduationCap size={20} /> },
+    { label: 'Administradores', path: '/admin/administradores', icon: <ShieldCheck size={20} /> },
     { label: 'Grupos', path: '/admin/grupos', icon: <Layers size={20} /> },
     { label: 'Catálogos', path: '/admin/catalogos', icon: <Shield size={20} /> },
     { label: 'Ajustes', path: '/admin/configuracion', icon: <Settings size={20} /> },
