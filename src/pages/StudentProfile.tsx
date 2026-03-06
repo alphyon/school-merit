@@ -238,7 +238,20 @@ export default function StudentProfile() {
       <EventModal isOpen={isModalOpen} onOpenChange={setIsModalOpen} studentId={id} studentName={student?.nombre} initialTab={modalTab} initialDemeritId={preselectedDemeritId} onSuccess={fetchData} />
       
       <div style={{ display: 'none' }}>
-        <Instrument001 ref={componentRef} schoolName={schoolConfig.name} logoUrl={schoolConfig.logo} config={schoolConfig} student={{ nombre: student?.nombre, nie: student?.nie, grado: student?.grupo_nombre, genero: student?.genero }} events={allHistory} />
+        <Instrument001 
+          ref={componentRef} 
+          schoolName={schoolConfig.name} 
+          logoUrl={schoolConfig.logo} 
+          config={schoolConfig} 
+          student={{ 
+            nombre: student?.nombre, 
+            nie: student?.nie, 
+            grado: student?.grupo_nombre, 
+            genero: student?.genero,
+            turno: student?.turno
+          }} 
+          events={allHistory} 
+        />
       </div>
     </DashboardLayout>
   );

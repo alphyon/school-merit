@@ -63,7 +63,7 @@ export const Instrument001 = React.forwardRef<HTMLDivElement, Instrument001Props
             <div className="grid grid-cols-3 gap-x-4 gap-y-1">
               <div className="border-b border-gray-300 flex justify-start">8. Sexo: <span className="font-bold ml-2">{student.genero === 'M' ? 'Masculino' : (student.genero === 'F' ? 'Femenino' : student.genero)}</span></div>
               <div className="border-b border-gray-300 flex justify-start">9. Grado/Sección: <span className="font-bold ml-2">{student.grado}</span></div>
-              <div className="border-b border-gray-300 flex justify-start">10. Turno: <span className="font-bold ml-2">{student.turno || '_________'}</span></div>
+              <div className="border-b border-gray-300 flex justify-start">10. Turno: <span className="font-bold ml-2 uppercase">{student.turno || '_________'}</span></div>
             </div>
           </div>
 
