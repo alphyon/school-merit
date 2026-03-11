@@ -243,7 +243,7 @@ export default function TeacherDashboard() {
               </div>
               <div>
                 <p className="text-xs font-black uppercase tracking-widest">Modo Offline Activo</p>
-                <p className="text-[10px] font-bold opacity-90">Los datos se guardarán localmente y se sincronizarán al detectar conexión.</p>
+                <p className="text-xs font-bold opacity-90">Los datos se guardarán localmente y se sincronizarán al detectar conexión.</p>
               </div>
             </div>
           </CardBody>
@@ -253,14 +253,14 @@ export default function TeacherDashboard() {
       <div className="flex justify-between items-center mb-8 text-slate-900">
         <div>
           <h1 className="text-3xl font-black uppercase tracking-tight flex items-center gap-3"><LayoutDashboard className="text-[#1e3b8a]" size={32} /> Panel de Alumnos</h1>
-          <p className="text-gray-500 font-bold uppercase text-[10px] tracking-widest mt-1">Docente: {teacherName}</p>
+          <p className="text-gray-500 font-bold uppercase text-xs tracking-widest mt-1">Docente: {teacherName}</p>
         </div>
         <div className="flex gap-2">
           {pendingSyncCount > 0 && (
             <Button 
               color="warning" 
               variant="flat" 
-              className="font-black uppercase text-[10px] h-10 px-6 rounded-xl border-2 border-orange-100 shadow-sm" 
+              className="font-black uppercase text-xs h-10 px-6 rounded-xl border-2 border-orange-100 shadow-sm" 
               startContent={<CloudSync size={18} className={isSyncing ? "animate-spin" : ""} />}
               onPress={syncPendingEvents}
               isLoading={isSyncing}
@@ -315,7 +315,7 @@ export default function TeacherDashboard() {
                     <Avatar name={s.nombre} className="w-20 h-20 text-xl border-4 border-white shadow-xl bg-gray-200" />
                   </div>
                   {alertMsg && (
-                    <div className={`absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full border-2 shadow-xl font-black text-[9px] z-20 animate-bounce ${alertStyle}`}>
+                    <div className={`absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full border-2 shadow-xl font-black text-xs z-20 animate-bounce ${alertStyle}`}>
                       {alertMsg}
                     </div>
                   )}

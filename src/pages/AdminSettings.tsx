@@ -119,12 +119,12 @@ export default function AdminSettings() {
                 <div className="bg-emerald-50 p-6 rounded-2xl border border-emerald-100 flex items-center justify-between">
                   <div>
                     <p className="text-emerald-900 font-black text-xs uppercase">Plantilla de Alumnos</p>
-                    <p className="text-[10px] text-emerald-700 font-medium">Descargue el formato base para la carga masiva de estudiantes.</p>
+                    <p className="text-xs text-emerald-700 font-medium">Descargue el formato base para la carga masiva de estudiantes.</p>
                   </div>
                   <Button 
                     color="success" 
                     variant="flat" 
-                    className="font-black text-[10px] uppercase h-10" 
+                    className="font-black text-xs uppercase h-10" 
                     startContent={<Download size={16} />}
                     onPress={downloadStudentTemplate}
                   >

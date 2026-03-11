@@ -185,7 +185,7 @@ export default function ManageTeachers() {
                       {t.docentes_grupos?.length > 0 ? t.docentes_grupos.map((dg: any) => {
                         const g = groups.find(gr => gr.id === dg.grupo_id);
                         return <Chip key={dg.grupo_id} size="sm" variant="flat" color="primary" className="font-bold text-[8px]">{g?.nombre || '...'}</Chip>;
-                      }) : <span className="text-[10px] text-gray-300 italic">SIN ASIGNAR</span>}
+                      }) : <span className="text-xs text-gray-300 italic">SIN ASIGNAR</span>}
                     </div>
                   </TableCell>
                   <TableCell className="text-right">

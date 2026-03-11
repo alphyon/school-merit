@@ -16,3 +16,39 @@
 }
 
 @custom-variant dark (&:is(.dark *));
+
+/* Font scale variants — solo sobreescribe variables de tipografía, sin tocar layout */
+
+/* Escala +15%: Tailwind v4 text vars + HeroUI font-size tokens */
+html.font-scale-lg {
+  /* Tailwind v4 */
+  --text-xs: 0.8625rem;
+  --text-sm: 1.006rem;
+  --text-lg: 1.294rem;
+  --text-xl: 1.4375rem;
+  --text-2xl: 1.725rem;
+  --text-3xl: 2.156rem;
+  --text-8xl: 6.9rem;
+  /* HeroUI */
+  --heroui-font-size-tiny: 0.8625rem;
+  --heroui-font-size-small: 1.006rem;
+  --heroui-font-size-medium: 1.15rem;
+  --heroui-font-size-large: 1.294rem;
+}
+
+/* Escala +30%: Tailwind v4 text vars + HeroUI font-size tokens */
+html.font-scale-xl {
+  /* Tailwind v4 */
+  --text-xs: 0.975rem;
+  --text-sm: 1.1375rem;
+  --text-lg: 1.4625rem;
+  --text-xl: 1.625rem;
+  --text-2xl: 1.95rem;
+  --text-3xl: 2.4375rem;
+  --text-8xl: 7.8rem;
+  /* HeroUI */
+  --heroui-font-size-tiny: 0.975rem;
+  --heroui-font-size-small: 1.1375rem;
+  --heroui-font-size-medium: 1.3rem;
+  --heroui-font-size-large: 1.4625rem;
+}

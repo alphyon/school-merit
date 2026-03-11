@@ -130,9 +130,9 @@ export default function StudentProfile() {
       <div className="flex justify-between items-center mb-8">
         <Button variant="flat" size="sm" className="font-bold text-gray-500 bg-white" startContent={<ArrowLeft size={18} />} onPress={() => navigate(-1)}>Volver</Button>
         <div className="flex gap-2">
-          <Button size="sm" color="danger" variant="flat" className="font-black uppercase text-[10px]" onPress={() => handleOpenAction('demerito')}>Falta</Button>
-          <Button size="sm" color="success" variant="flat" className="font-black uppercase text-[10px]" onPress={() => handleOpenAction('redencion')}>Redención</Button>
-          <Button size="sm" color="secondary" variant="flat" className="font-black uppercase text-[10px]" onPress={() => handleOpenAction('reconocimiento')}>Premio</Button>
+          <Button size="sm" color="danger" variant="flat" className="font-black uppercase text-xs" onPress={() => handleOpenAction('demerito')}>Falta</Button>
+          <Button size="sm" color="success" variant="flat" className="font-black uppercase text-xs" onPress={() => handleOpenAction('redencion')}>Redención</Button>
+          <Button size="sm" color="secondary" variant="flat" className="font-black uppercase text-xs" onPress={() => handleOpenAction('reconocimiento')}>Premio</Button>
         </div>
       </div>
 
@@ -170,12 +170,12 @@ export default function StudentProfile() {
                     {stats.balance >= 3 && stats.balance < 6 && <Chip color="primary" variant="flat" className="font-black text-[10px]">ADVERTENCIA</Chip>}
                   </div>
                 </div>
-                <Button color="primary" className="bg-[#1e3b8a] font-black uppercase text-[10px] h-12 px-8" startContent={<Printer size={18} />} onPress={() => handlePrint()}>Imprimir</Button>
+                <Button color="primary" className="bg-[#1e3b8a] font-black uppercase text-xs h-12 px-8" startContent={<Printer size={18} />} onPress={() => handlePrint()}>Imprimir</Button>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100 text-center"><p className="text-gray-400 text-[9px] font-black uppercase mb-1">Histórico</p><p className="text-3xl font-black text-gray-600">{stats.historico}</p></div>
-                <div className="p-5 rounded-2xl bg-emerald-50 border border-emerald-100 text-center"><p className="text-emerald-400 text-[9px] font-black uppercase mb-1">Redimidos</p><p className="text-3xl font-black text-emerald-600">+{stats.limpiados}</p></div>
-                <div className="p-5 rounded-2xl bg-red-50 border-2 border-red-200 text-center"><p className="text-red-400 text-[9px] font-black uppercase mb-1">Balance Actual</p><p className="text-3xl font-black text-red-600">{stats.balance}</p></div>
+                <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100 text-center"><p className="text-gray-400 text-xs font-black uppercase mb-1">Histórico</p><p className="text-3xl font-black text-gray-600">{stats.historico}</p></div>
+                <div className="p-5 rounded-2xl bg-emerald-50 border border-emerald-100 text-center"><p className="text-emerald-400 text-xs font-black uppercase mb-1">Redimidos</p><p className="text-3xl font-black text-emerald-600">+{stats.limpiados}</p></div>
+                <div className="p-5 rounded-2xl bg-red-50 border-2 border-red-200 text-center"><p className="text-red-400 text-xs font-black uppercase mb-1">Balance Actual</p><p className="text-3xl font-black text-red-600">{stats.balance}</p></div>
               </div>
             </CardBody>
           </Card>
@@ -188,7 +188,7 @@ export default function StudentProfile() {
             </CardBody>
           </Card>
 
-          <Tabs selectedKey={activeTab} onSelectionChange={(k) => { setActiveTab(k as string); setPage(1); }} variant="underlined" color="primary" classNames={{ tabList: "mb-6", tabContent: "font-black uppercase text-[10px]" }}>
+          <Tabs selectedKey={activeTab} onSelectionChange={(k) => { setActiveTab(k as string); setPage(1); }} variant="underlined" color="primary" classNames={{ tabList: "mb-6", tabContent: "font-black uppercase text-xs" }}>
             <Tab key="active" title="Pendientes" />
             <Tab key="redeemed" title="Redenciones" />
             <Tab key="recognition" title="Premios" />
@@ -210,15 +210,15 @@ export default function StudentProfile() {
                         </div>
                         <div>
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="text-[10px] font-black text-gray-400 uppercase">{new Date(ev.fecha).toLocaleDateString()}</span>
+                            <span className="text-xs font-black text-gray-400 uppercase">{new Date(ev.fecha).toLocaleDateString()}</span>
                             {isRed && <Chip size="sm" variant="flat" color="primary" className="h-4 text-[8px] font-black uppercase">Redención Aplicada</Chip>}
                             {isDem && ev.estado === 'redimido' && <Chip size="sm" variant="flat" color="success" className="h-4 text-[8px] font-black uppercase">Redimido</Chip>}
                           </div>
                           <h3 className="font-black text-gray-900 uppercase text-sm">{ev.code}: {ev.title}</h3>
-                          {isRed && ev.refInfo && <p className="text-[9px] font-bold text-gray-500 uppercase italic mt-1">Limpió falta: {ev.refInfo}</p>}
+                          {isRed && ev.refInfo && <p className="text-xs font-bold text-gray-500 uppercase italic mt-1">Limpió falta: {ev.refInfo}</p>}
                           <p className="text-gray-500 text-xs mt-1 italic">{ev.observaciones || 'Sin detalles'}</p>
                           {isDem && ev.estado === 'activo' && (
-                            <Button size="sm" color="success" variant="flat" className="mt-3 font-black text-[9px] h-7 uppercase" onPress={() => handleOpenAction('redencion', ev.id)}>Redimir ahora</Button>
+                            <Button size="sm" color="success" variant="flat" className="mt-3 font-black text-xs h-7 uppercase" onPress={() => handleOpenAction('redencion', ev.id)}>Redimir ahora</Button>
                           )}
                         </div>
                       </div>

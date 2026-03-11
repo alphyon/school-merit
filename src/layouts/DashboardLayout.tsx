@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { 
+import {
   Avatar, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, useDisclosure,
   Button
 } from "@heroui/react";
@@ -8,6 +8,7 @@ import {
   LayoutDashboard, Users, GraduationCap, Layers, Shield, Settings, 
   LogOut, Menu, X, BarChart, Lock, ShieldCheck
 } from 'lucide-react';
+import { useFontSize } from '../hooks/useFontSize';
 import { supabase } from '../lib/supabase';
 import ChangePasswordModal from '../components/ChangePasswordModal';
 import { Footer } from '../components/Footer';
@@ -25,6 +26,7 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
   
   const navigate = useNavigate();
   const location = useLocation();
+  const { scale, increase, decrease } = useFontSize();
 
   const fetchSessionData = async () => {
     try {
@@ -134,7 +136,7 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
             <Avatar size="sm" isBordered color="secondary" name={userData?.name?.charAt(0)} />
             <div className="flex-1 min-w-0">
               <p className="text-xs font-black truncate uppercase tracking-tighter">{userData?.name || 'Usuario'}</p>
-              <p className="text-[9px] text-blue-300 uppercase font-bold">{role}</p>
+              <p className="text-xs text-blue-300 uppercase font-bold">{role}</p>
             </div>
             <button onClick={handleLogout} className="p-2 hover:bg-red-500 rounded-xl transition-colors"><LogOut size={18} /></button>
           </div>
@@ -155,6 +157,26 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
           </div>
 
           <div className="flex items-center gap-3">
+            {/* Controles de tamaño de fuente */}
+            <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-xl p-1">
+              <button
+                onClick={decrease}
+                disabled={scale === 'normal'}
+                title="Reducir fuente"
+                className="w-7 h-7 flex items-center justify-center rounded-lg text-xs font-black text-gray-500 hover:bg-white hover:text-[#1e3b8a] hover:shadow-sm transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                A-
+              </button>
+              <button
+                onClick={increase}
+                disabled={scale === 'xl'}
+                title="Aumentar fuente"
+                className="w-8 h-7 flex items-center justify-center rounded-lg text-sm font-black text-gray-700 hover:bg-white hover:text-[#1e3b8a] hover:shadow-sm transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                A+
+              </button>
+            </div>
+
             <div className="h-8 w-[1px] bg-gray-100 mx-2"></div>
 
             <Dropdown placement="bottom-end" backdrop="blur">
@@ -162,14 +184,14 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
                 <div className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded-2xl transition-colors">
                   <div className="hidden sm:block text-right">
                     <p className="text-xs font-black text-gray-900 uppercase leading-none mb-1">{userData?.name || 'Usuario'}</p>
-                    <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest">{role}</p>
+                    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">{role}</p>
                   </div>
                   <Avatar size="md" isBordered color="primary" className="shadow-md" name={userData?.name?.charAt(0)} />
                 </div>
               </DropdownTrigger>
               <DropdownMenu aria-label="Profile" variant="flat">
                 <DropdownItem key="profile" className="h-14 gap-2">
-                  <p className="font-black text-[10px] uppercase text-gray-400">Sesión iniciada</p>
+                  <p className="font-black text-xs uppercase text-gray-400">Sesión iniciada</p>
                   <p className="font-bold text-[#1e3b8a]">{userData?.email || 'Modo Offline'}</p>
                 </DropdownItem>
                 <DropdownItem key="password" startContent={<Lock size={16} />} onClick={onOpen}>Seguridad</DropdownItem>

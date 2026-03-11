@@ -73,7 +73,7 @@ export default function ManageCatalogs() {
       </div>
 
       <div className="space-y-6 text-slate-900">
-        <Tabs aria-label="Catálogos" color={activeTab === "demerito" ? "danger" : (activeTab === "redencion" ? "success" : "secondary")} variant="underlined" selectedKey={activeTab} onSelectionChange={(key) => setActiveTab(key as string)} classNames={{ tabList: "gap-6 border-b", tabContent: "font-black uppercase tracking-widest text-[10px]" }}>
+        <Tabs aria-label="Catálogos" color={activeTab === "demerito" ? "danger" : (activeTab === "redencion" ? "success" : "secondary")} variant="underlined" selectedKey={activeTab} onSelectionChange={(key) => setActiveTab(key as string)} classNames={{ tabList: "gap-6 border-b", tabContent: "font-black uppercase tracking-widest text-xs" }}>
           <Tab key="demerito" title={<div className="flex items-center space-x-2"><ShieldAlert size={18} /><span>Deméritos</span></div>} />
           <Tab key="redencion" title={<div className="flex items-center space-x-2"><HeartHandshake size={18} /><span>Redenciones</span></div>} />
           <Tab key="reconocimiento" title={<div className="flex items-center space-x-2"><Award size={18} /><span>Reconocimientos</span></div>} />

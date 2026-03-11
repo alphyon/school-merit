@@ -88,7 +88,7 @@ export default function AppHeader({ role }: { role: string }) {
         )}
         <div className="flex flex-col overflow-hidden">
           <p className="text-[8px] font-black tracking-widest uppercase opacity-70 leading-none">Gestión de Deméritos</p>
-          <p className="text-[10px] font-bold uppercase truncate max-w-[100px] sm:max-w-[200px] leading-tight">{settings.name}</p>
+          <p className="text-xs font-bold uppercase truncate max-w-[100px] sm:max-w-[200px] leading-tight">{settings.name}</p>
         </div>
       </NavbarBrand>
       
@@ -97,19 +97,19 @@ export default function AppHeader({ role }: { role: string }) {
         {isDocente ? (
           <>
             <NavbarItem isActive={location.pathname === '/teacher'}>
-              <Link onPress={() => navigate('/teacher')} className={`text-[11px] font-black uppercase tracking-widest ${location.pathname === '/teacher' ? 'text-white border-b-2 border-white' : 'text-blue-200 hover:text-white'}`}>
+              <Link onPress={() => navigate('/teacher')} className={`text-xs font-black uppercase tracking-widest ${location.pathname === '/teacher' ? 'text-white border-b-2 border-white' : 'text-blue-200 hover:text-white'}`}>
                 Alumnos
               </Link>
             </NavbarItem>
             <NavbarItem isActive={location.pathname === '/teacher/reportes'}>
-              <Link onPress={() => navigate('/teacher/reportes')} className={`text-[11px] font-black uppercase tracking-widest ${location.pathname === '/teacher/reportes' ? 'text-white border-b-2 border-white' : 'text-blue-200 hover:text-white'}`}>
+              <Link onPress={() => navigate('/teacher/reportes')} className={`text-xs font-black uppercase tracking-widest ${location.pathname === '/teacher/reportes' ? 'text-white border-b-2 border-white' : 'text-blue-200 hover:text-white'}`}>
                 Reportes
               </Link>
             </NavbarItem>
           </>
         ) : (
           <NavbarItem>
-            <span className="text-[10px] font-black text-blue-200 uppercase tracking-[0.2em] bg-white/10 px-4 py-1 rounded-full border border-white/10">
+            <span className="text-xs font-black text-blue-200 uppercase tracking-[0.2em] bg-white/10 px-4 py-1 rounded-full border border-white/10">
               Panel Administrativo Activo
             </span>
           </NavbarItem>
@@ -133,7 +133,7 @@ export default function AppHeader({ role }: { role: string }) {
             <Avatar isBordered as="button" className="transition-transform" color="primary" name={userData?.name?.charAt(0)} size="sm" />
           </DropdownTrigger>
           <DropdownMenu aria-label="Profile Actions" variant="flat">
-            <DropdownItem key="profile" className="h-14 gap-2 text-primary uppercase font-black text-[10px]">
+            <DropdownItem key="profile" className="h-14 gap-2 text-primary uppercase font-black text-xs">
               {userData?.name}
             </DropdownItem>
             <DropdownItem key="password" startContent={<LockIcon size={16} />} onClick={onOpen}>

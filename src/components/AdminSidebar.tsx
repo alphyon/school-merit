@@ -64,8 +64,8 @@ export default function AdminSidebar() {
             )}
           </div>
           <div>
-            <h1 className="text-slate-900 dark:text-white text-[11px] font-black leading-tight uppercase tracking-tighter">Gestión de Deméritos</h1>
-            <p className="text-slate-500 dark:text-slate-400 text-[9px] font-bold uppercase tracking-widest truncate max-w-[120px]">{schoolName}</p>
+            <h1 className="text-slate-900 dark:text-white text-xs font-black leading-tight uppercase tracking-tighter">Gestión de Méritos</h1>
+            <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-widest truncate max-w-[120px]">{schoolName}</p>
           </div>
         </div>
         
@@ -74,7 +74,7 @@ export default function AdminSidebar() {
             <Button 
               key={item.path}
               variant="light" 
-              className={`justify-start gap-3 px-3 h-11 font-bold uppercase text-[11px] tracking-widest ${location.pathname === item.path ? 'bg-[#1e3b8a]/10 text-[#1e3b8a]' : 'text-slate-500'}`} 
+              className={`justify-start gap-3 px-3 h-11 font-bold uppercase text-xs tracking-widest ${location.pathname === item.path ? 'bg-[#1e3b8a]/10 text-[#1e3b8a]' : 'text-slate-500'}`} 
               startContent={item.icon}
               onPress={() => navigate(item.path)}
             >
@@ -83,7 +83,7 @@ export default function AdminSidebar() {
           ))}
           <Button 
             variant="light" 
-            className={`justify-start gap-3 px-3 h-11 font-bold uppercase text-[11px] tracking-widest ${location.pathname === '/admin/configuracion' ? 'bg-[#1e3b8a]/10 text-[#1e3b8a]' : 'text-slate-500'}`} 
+            className={`justify-start gap-3 px-3 h-11 font-bold uppercase text-xs tracking-widest ${location.pathname === '/admin/configuracion' ? 'bg-[#1e3b8a]/10 text-[#1e3b8a]' : 'text-slate-500'}`} 
             startContent={<Settings size={20} />}
             onPress={() => navigate('/admin/configuracion')}
           >
@@ -100,8 +100,8 @@ export default function AdminSidebar() {
               onClick={onOpen}
             />
             <div className="flex-1 min-w-0 cursor-pointer" onClick={onOpen}>
-              <p className="text-[10px] font-black truncate text-slate-900 dark:text-white uppercase tracking-tighter">{adminData?.name}</p>
-              <p className="text-[9px] text-slate-400 truncate font-black uppercase tracking-widest">{adminData?.role}</p>
+              <p className="text-xs font-black truncate text-slate-900 dark:text-white uppercase tracking-tighter">{adminData?.name}</p>
+              <p className="text-xs text-slate-400 truncate font-black uppercase tracking-widest">{adminData?.role}</p>
             </div>
             <Button 
               isIconOnly 

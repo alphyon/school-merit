@@ -161,7 +161,7 @@ export default function AdminDashboard() {
       {notification && <Notification message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
       
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 text-slate-900">
-        <div><h1 className="text-3xl font-black uppercase tracking-tight">Panel Administrativo</h1><p className="text-gray-500 font-bold uppercase text-[10px] tracking-widest mt-1">Gestión Institucional</p></div>
+        <div><h1 className="text-3xl font-black uppercase tracking-tight">Panel Administrativo</h1><p className="text-gray-500 font-bold uppercase text-xs tracking-widest mt-1">Gestión Institucional</p></div>
         <div className="flex gap-2 items-center bg-white p-2 rounded-xl shadow-sm border border-gray-50">
           <Select aria-label="S" size="sm" className="w-24" selectedKeys={[dirStart]} onSelectionChange={(k) => setDirStart(Array.from(k)[0] as string)}>{monthsList.map((m) => <SelectItem key={m.key}>{m.label}</SelectItem>)}</Select>
           <Select aria-label="E" size="sm" className="w-24" selectedKeys={[dirEnd]} onSelectionChange={(k) => setDirEnd(Array.from(k)[0] as string)}>{monthsList.map((m) => <SelectItem key={m.key}>{m.label}</SelectItem>)}</Select>
@@ -171,9 +171,9 @@ export default function AdminDashboard() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10 text-slate-900">
-        <Card className="border-none shadow-sm bg-red-500 text-white"><CardBody className="p-4 text-center"><p className="text-[9px] font-black uppercase opacity-80">Deméritos Activos</p><h3 className="text-2xl font-black">{stats.demerits}</h3></CardBody></Card>
-        <Card className="border-none shadow-sm bg-purple-600 text-white"><CardBody className="p-4 text-center"><p className="text-[9px] font-black uppercase opacity-80">Reconocimientos</p><h3 className="text-2xl font-black">{stats.recognitions}</h3></CardBody></Card>
-        <Card className="border-none shadow-sm bg-[#1e3b8a] text-white"><CardBody className="p-4 text-center"><p className="text-[9px] font-black uppercase opacity-80">Matrícula Activa</p><h3 className="text-2xl font-black">{stats.active}</h3></CardBody></Card>
+        <Card className="border-none shadow-sm bg-red-500 text-white"><CardBody className="p-4 text-center"><p className="text-xs font-black uppercase opacity-80">Deméritos Activos</p><h3 className="text-2xl font-black">{stats.demerits}</h3></CardBody></Card>
+        <Card className="border-none shadow-sm bg-purple-600 text-white"><CardBody className="p-4 text-center"><p className="text-xs font-black uppercase opacity-80">Reconocimientos</p><h3 className="text-2xl font-black">{stats.recognitions}</h3></CardBody></Card>
+        <Card className="border-none shadow-sm bg-[#1e3b8a] text-white"><CardBody className="p-4 text-center"><p className="text-xs font-black uppercase opacity-80">Matrícula Activa</p><h3 className="text-2xl font-black">{stats.active}</h3></CardBody></Card>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 text-slate-900">
@@ -181,7 +181,7 @@ export default function AdminDashboard() {
            <Card className="border-none shadow-sm bg-white overflow-hidden h-full">
              <div className="p-6 border-b flex justify-between items-center"><h3 className="text-lg font-black uppercase text-[#1e3b8a]">Consolidado (003)</h3><Chip size="sm" variant="flat" color="primary" className="font-bold">{getPeriodText(dirStart, dirEnd, dirYear)}</Chip></div>
              <CardBody className="p-0 overflow-x-auto">
-                <table className="w-full text-xs text-left"><thead className="bg-gray-50/50 font-bold text-gray-400 uppercase text-[10px]"><tr><th className="p-4 text-[#1e3b8a]">Sección</th><th className="p-4 text-center">Matrícula</th><th className="p-4 text-center text-red-600">Deméritos</th><th className="p-4 text-center text-emerald-600">Redenciones</th><th className="p-4 text-center text-purple-600">Reconocimientos</th></tr></thead><tbody>{consolidatedData.map((d, i) => (<tr key={i} className="hover:bg-gray-50/50 transition-colors border-b last:border-none border-gray-50"><td className="p-4 font-black uppercase text-[#1e3b8a]">{d.groupName}</td><td className="p-4 text-center font-bold text-gray-500">{d.matT}</td><td className="p-4 text-center font-black text-red-600">{d.demTotal}</td><td className="p-4 text-center font-black text-emerald-600">{d.redTotal}</td><td className="p-4 text-center font-black text-purple-600">{d.recT}</td></tr>))}</tbody></table>
+                <table className="w-full text-xs text-left"><thead className="bg-gray-50/50 font-bold text-gray-400 uppercase text-xs"><tr><th className="p-4 text-[#1e3b8a]">Sección</th><th className="p-4 text-center">Matrícula</th><th className="p-4 text-center text-red-600">Deméritos</th><th className="p-4 text-center text-emerald-600">Redenciones</th><th className="p-4 text-center text-purple-600">Reconocimientos</th></tr></thead><tbody>{consolidatedData.map((d, i) => (<tr key={i} className="hover:bg-gray-50/50 transition-colors border-b last:border-none border-gray-50"><td className="p-4 font-black uppercase text-[#1e3b8a]">{d.groupName}</td><td className="p-4 text-center font-bold text-gray-500">{d.matT}</td><td className="p-4 text-center font-black text-red-600">{d.demTotal}</td><td className="p-4 text-center font-black text-emerald-600">{d.redTotal}</td><td className="p-4 text-center font-black text-purple-600">{d.recT}</td></tr>))}</tbody></table>
              </CardBody>
            </Card>
         </div>
@@ -196,7 +196,7 @@ export default function AdminDashboard() {
               </div>
               <Select aria-label="Y" label="Año" variant="faded" classNames={{ trigger: "text-white" }} selectedKeys={[teachYear]} onSelectionChange={(k) => setTeachYear(Array.from(k)[0] as string)}>{["2024", "2025", "2026"].map((y) => <SelectItem key={y}>{y}</SelectItem>)}</Select>
               <Select aria-label="G" label="Grupo" variant="faded" classNames={{ trigger: "text-white" }} selectedKeys={reportGroupId ? [reportGroupId] : []} onSelectionChange={(k) => setReportGroupId(Array.from(k)[0] as string)}>{groups.map((g) => <SelectItem key={g.id} textValue={g.nombre}>{g.nombre}</SelectItem>)}</Select>
-              {reportGroupId && (<div className="bg-white/10 p-4 rounded-xl border border-white/20"><p className="text-[10px] font-black uppercase text-blue-300">Docente:</p><p className="text-sm font-bold uppercase">{assignedTeacherName}</p></div>)}
+              {reportGroupId && (<div className="bg-white/10 p-4 rounded-xl border border-white/20"><p className="text-xs font-black uppercase text-blue-300">Docente:</p><p className="text-sm font-bold uppercase">{assignedTeacherName}</p></div>)}
               <Button className="w-full bg-white text-[#1e3b8a] font-black uppercase h-12 shadow-lg" startContent={isTeacherLoading ? <Spinner size="sm" /> : <Printer size={18} />} isDisabled={!reportGroupId || isTeacherLoading || assignedTeacherName === "DOCENTE NO ASIGNADO"} onPress={() => printTeacher()}>Imprimir 002</Button>
             </CardBody>
           </Card>

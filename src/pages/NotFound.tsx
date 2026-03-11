@@ -32,7 +32,7 @@ export default function NotFound() {
             </Button>
             <Button 
               variant="light" 
-              className="font-bold text-slate-400 uppercase text-[10px] tracking-widest"
+              className="font-bold text-slate-400 uppercase text-xs tracking-widest"
               startContent={<ArrowLeft size={14} />}
               onPress={() => navigate(-1)}
             >
