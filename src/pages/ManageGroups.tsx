@@ -93,22 +93,22 @@ export default function ManageGroups() {
     <DashboardLayout role="admin">
       {notification && <Notification message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
       <div className="flex justify-between items-center mb-8 text-slate-900">
-        <div><h1 className="text-3xl font-black flex items-center gap-2 uppercase"><Layers className="text-[#1e3b8a]" size={32} /> Grupos</h1></div>
-        <Button color="primary" className="bg-[#1e3b8a] font-black uppercase shadow-lg text-xs" startContent={<Plus size={18} />} onPress={() => handleOpenModal()}>Nuevo Grupo</Button>
+        <div><h1 className="text-3xl font-black flex items-center gap-2"><Layers className="text-[#1e3b8a]" size={32} /> Grupos</h1></div>
+        <Button color="primary" className="bg-[#1e3b8a] font-black shadow-lg text-xs" startContent={<Plus size={18} />} onPress={() => handleOpenModal()}>Nuevo Grupo</Button>
       </div>
 
       <Card className="border-none shadow-sm bg-white min-h-[400px]">
         <CardBody className="p-0 text-slate-900">
           <Table removeWrapper aria-label="Grupos">
             <TableHeader>
-              <TableColumn className="bg-gray-50 font-black text-gray-400 uppercase text-xs">Nombre del Grupo</TableColumn>
-              <TableColumn className="bg-gray-50 font-black text-gray-400 uppercase text-xs">Grado</TableColumn>
-              <TableColumn className="bg-gray-50 font-black text-gray-400 uppercase text-xs text-right">Acciones</TableColumn>
+              <TableColumn className="bg-gray-50 font-black text-gray-400 text-xs">Nombre del Grupo</TableColumn>
+              <TableColumn className="bg-gray-50 font-black text-gray-400 text-xs">Grado</TableColumn>
+              <TableColumn className="bg-gray-50 font-black text-gray-400 text-xs text-right">Acciones</TableColumn>
             </TableHeader>
             <TableBody emptyContent={loading ? <Spinner /> : "No hay grupos registrados."}>
               {groups.map((g) => (
                 <TableRow key={g.id} className="border-b border-gray-50 last:border-none">
-                  <TableCell className="font-black uppercase text-xs text-[#1e3b8a]">{g.nombre}</TableCell>
+                  <TableCell className="font-black text-xs text-[#1e3b8a]">{g.nombre}</TableCell>
                   <TableCell className="font-bold text-gray-500 text-xs">{g.grado} "{g.seccion}"</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
@@ -126,7 +126,7 @@ export default function ManageGroups() {
       <Modal isOpen={isOpen} onOpenChange={onOpenChange} backdrop="blur">
         <ModalContent>{(onClose) => (
             <>
-              <ModalHeader className="border-b bg-gray-50 font-black uppercase text-[#1e3b8a]">{isEditing ? 'Editar' : 'Registrar'} Grupo</ModalHeader>
+              <ModalHeader className="border-b bg-gray-50 font-black text-[#1e3b8a]">{isEditing ? 'Editar' : 'Registrar'} Grupo</ModalHeader>
               <ModalBody className="py-6 space-y-4 text-slate-900">
                 <Input 
                   label="Grado (Ej: 9°)" isRequired variant="bordered" value={newGroup.grado} onValueChange={(v) => setNewGroup({...newGroup, grado: v})}
@@ -153,7 +153,7 @@ export default function ManageGroups() {
       <Modal isOpen={isDelOpen} onOpenChange={onDelOpenChange} size="sm" backdrop="blur">
         <ModalContent>{(onClose) => (
             <>
-              <ModalHeader className="flex flex-col gap-1 text-center"><AlertCircle className="mx-auto text-red-500 mb-2" size={40} /><h2 className="text-xl font-black uppercase text-red-600">¿Eliminar?</h2></ModalHeader>
+              <ModalHeader className="flex flex-col gap-1 text-center"><AlertCircle className="mx-auto text-red-500 mb-2" size={40} /><h2 className="text-xl font-black text-red-600">¿Eliminar?</h2></ModalHeader>
               <ModalBody className="text-center text-gray-500 font-bold text-sm leading-relaxed"><p>Asegúrate de que el grupo no tenga alumnos asignados.</p></ModalBody>
               <ModalFooter className="flex justify-center gap-4 p-6"><Button variant="flat" onPress={onClose}>No</Button><Button color="danger" onPress={() => handleDelete(onClose)}>Sí, eliminar</Button></ModalFooter>
             </>

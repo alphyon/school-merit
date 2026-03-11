@@ -109,8 +109,8 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
             <div className="size-10 bg-white/20 rounded-xl flex items-center justify-center mr-3"><GraduationCap /></div>
           )}
           <div className="flex flex-col overflow-hidden">
-            <span className="text-[10px] font-black opacity-60 uppercase tracking-widest leading-none">Gestión de Deméritos</span>
-            <span className="text-sm font-black truncate uppercase">{schoolConfig.name}</span>
+            <span className="text-xs font-black opacity-60 tracking-widest leading-none">Gestión de Deméritos</span>
+            <span className="text-sm font-black truncate">{schoolConfig.name}</span>
           </div>
         </div>
 
@@ -119,7 +119,7 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
             <button
               key={link.path}
               onClick={() => navigate(link.path)}
-              className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-xs font-black uppercase tracking-widest transition-all duration-300
+              className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-xs font-black tracking-widest transition-all duration-300
                 ${location.pathname === link.path 
                   ? 'bg-white text-[#1e3b8a] shadow-xl shadow-black/20' 
                   : 'text-blue-100/60 hover:bg-white/10 hover:text-white'
@@ -135,8 +135,8 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
           <div className="flex items-center gap-4">
             <Avatar size="sm" isBordered color="secondary" name={userData?.name?.charAt(0)} />
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-black truncate uppercase tracking-tighter">{userData?.name || 'Usuario'}</p>
-              <p className="text-xs text-blue-300 uppercase font-bold">{role}</p>
+              <p className="text-xs font-black truncate tracking-tighter">{userData?.name || 'Usuario'}</p>
+              <p className="text-xs text-blue-300 font-bold">{role}</p>
             </div>
             <button onClick={handleLogout} className="p-2 hover:bg-red-500 rounded-xl transition-colors"><LogOut size={18} /></button>
           </div>
@@ -147,11 +147,11 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
         <header className="h-20 bg-white dark:bg-[#1e293b] border-b border-gray-100 dark:border-gray-800 flex items-center justify-between px-6 lg:px-10 shadow-sm z-10">
           <div className="flex items-center gap-4 lg:hidden">
             <button onClick={() => setIsSidebarOpen(true)} className="p-3 bg-gray-100 rounded-2xl text-[#1e3b8a]"><Menu /></button>
-            <span className="font-black text-[#1e3b8a] uppercase tracking-tighter">SGE</span>
+            <span className="font-black text-[#1e3b8a] tracking-tighter">SGE</span>
           </div>
 
           <div className="hidden lg:block">
-            <h2 className="text-sm font-black text-gray-400 uppercase tracking-[0.3em]">
+            <h2 className="text-sm font-black text-gray-400 tracking-[0.3em]">
               {links.find(l => l.path === location.pathname)?.label || 'Escritorio'}
             </h2>
           </div>
@@ -183,15 +183,15 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
               <DropdownTrigger>
                 <div className="flex items-center gap-3 cursor-pointer hover:bg-gray-50 p-2 rounded-2xl transition-colors">
                   <div className="hidden sm:block text-right">
-                    <p className="text-xs font-black text-gray-900 uppercase leading-none mb-1">{userData?.name || 'Usuario'}</p>
-                    <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">{role}</p>
+                    <p className="text-xs font-black text-gray-900 leading-none mb-1">{userData?.name || 'Usuario'}</p>
+                    <p className="text-xs text-gray-400 font-bold tracking-widest">{role}</p>
                   </div>
                   <Avatar size="md" isBordered color="primary" className="shadow-md" name={userData?.name?.charAt(0)} />
                 </div>
               </DropdownTrigger>
               <DropdownMenu aria-label="Profile" variant="flat">
                 <DropdownItem key="profile" className="h-14 gap-2">
-                  <p className="font-black text-xs uppercase text-gray-400">Sesión iniciada</p>
+                  <p className="font-black text-xs text-gray-400">Sesión iniciada</p>
                   <p className="font-bold text-[#1e3b8a]">{userData?.email || 'Modo Offline'}</p>
                 </DropdownItem>
                 <DropdownItem key="password" startContent={<Lock size={16} />} onClick={onOpen}>Seguridad</DropdownItem>
@@ -205,7 +205,7 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
           <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 lg:hidden animate-in fade-in duration-300" onClick={() => setIsSidebarOpen(false)}>
             <div className="absolute left-0 top-0 bottom-0 w-[280px] bg-[#1e3b8a] shadow-2xl flex flex-col p-6 slide-in-from-left duration-300" onClick={e => e.stopPropagation()}>
               <div className="flex justify-between items-center mb-10 text-white">
-                <span className="text-2xl font-black tracking-tighter uppercase italic">Menú</span>
+                <span className="text-2xl font-black tracking-tighter italic">Menú</span>
                 <button onClick={() => setIsSidebarOpen(false)} className="p-2 bg-white/10 rounded-xl"><X /></button>
               </div>
               <nav className="space-y-3 flex-1">
@@ -213,7 +213,7 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
                   <button
                     key={link.path}
                     onClick={() => { navigate(link.path); setIsSidebarOpen(false); }}
-                    className={`w-full flex items-center gap-4 px-6 py-5 rounded-2xl text-sm font-black uppercase tracking-widest
+                    className={`w-full flex items-center gap-4 px-6 py-5 rounded-2xl text-sm font-black tracking-widest
                       ${location.pathname === link.path ? 'bg-white text-[#1e3b8a] shadow-2xl' : 'text-white/70 hover:bg-white/10'}`}
                   >
                     {link.icon}
@@ -221,7 +221,7 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
                   </button>
                 ))}
               </nav>
-              <Button color="danger" variant="flat" className="w-full h-14 font-black uppercase tracking-widest text-white mt-10" startContent={<LogOut />} onClick={handleLogout}>Cerrar Sesión</Button>
+              <Button color="danger" variant="flat" className="w-full h-14 font-black tracking-widest text-white mt-10" startContent={<LogOut />} onClick={handleLogout}>Cerrar Sesión</Button>
             </div>
           </div>
         )}

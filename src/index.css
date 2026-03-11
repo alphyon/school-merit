@@ -17,6 +17,15 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Accesibilidad: respeta preferencia de movimiento reducido */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 /* Font scale variants — solo sobreescribe variables de tipografía, sin tocar layout */
 
 /* Escala +15%: Tailwind v4 text vars + HeroUI font-size tokens */

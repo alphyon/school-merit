@@ -36,7 +36,7 @@ export const Notification = ({ message, type, onClose, duration = 3000 }: Notifi
               {current.icon}
             </div>
             <div>
-              <p className="text-xs font-black uppercase opacity-70 tracking-widest">{current.label}</p>
+              <p className="text-xs font-black opacity-70 tracking-widest">{current.label}</p>
               <p className="text-sm font-bold leading-tight">{message}</p>
             </div>
           </div>

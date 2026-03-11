@@ -159,13 +159,13 @@ export default function ManageStudents() {
       {notification && <Notification message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
       
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 text-slate-900">
-        <div><h1 className="text-3xl font-black uppercase tracking-tight flex items-center gap-2"><Users className="text-[#1e3b8a]" size={32} /> Estudiantes</h1></div>
+        <div><h1 className="text-3xl font-black tracking-tight flex items-center gap-2"><Users className="text-[#1e3b8a]" size={32} /> Estudiantes</h1></div>
         <div className="flex gap-2">
           <label className="cursor-pointer">
             <input type="file" accept=".csv" className="hidden" onChange={handleFileUpload} disabled={isImporting} />
-            <Button as="span" variant="flat" color="success" isLoading={isImporting} startContent={<FileSpreadsheet size={18} />} className="font-black uppercase text-xs">Cargar CSV</Button>
+            <Button as="span" variant="flat" color="success" isLoading={isImporting} startContent={<FileSpreadsheet size={18} />} className="font-black text-xs">Cargar CSV</Button>
           </label>
-          <Button color="primary" className="bg-[#1e3b8a] font-black uppercase shadow-lg text-xs" startContent={<Plus size={18} />} onPress={() => handleOpenModal()}>Nuevo Alumno</Button>
+          <Button color="primary" className="bg-[#1e3b8a] font-black shadow-lg text-xs" startContent={<Plus size={18} />} onPress={() => handleOpenModal()}>Nuevo Alumno</Button>
         </div>
       </div>
 
@@ -195,22 +195,22 @@ export default function ManageStudents() {
         <CardBody className="p-0 text-slate-900 text-xs">
           <Table removeWrapper aria-label="Estudiantes">
             <TableHeader>
-              <TableColumn className="bg-gray-50 font-black text-gray-400 uppercase">NIE</TableColumn>
-              <TableColumn className="bg-gray-50 font-black text-gray-400 uppercase">Nombre Completo</TableColumn>
-              <TableColumn className="bg-gray-50 font-black text-gray-400 uppercase">Estado</TableColumn>
-              <TableColumn className="bg-gray-50 font-black text-gray-400 uppercase text-right">Acciones</TableColumn>
+              <TableColumn className="bg-gray-50 font-black text-gray-400">NIE</TableColumn>
+              <TableColumn className="bg-gray-50 font-black text-gray-400">Nombre Completo</TableColumn>
+              <TableColumn className="bg-gray-50 font-black text-gray-400">Estado</TableColumn>
+              <TableColumn className="bg-gray-50 font-black text-gray-400 text-right">Acciones</TableColumn>
             </TableHeader>
             <TableBody emptyContent={loading ? <Spinner /> : "No hay resultados."}>
               {paginatedStudents.map((s) => (
                 <TableRow key={s.id} className="border-b border-gray-50 last:border-none hover:bg-gray-50/50">
                   <TableCell className="font-bold text-gray-500 font-mono">{s.nie}</TableCell>
-                  <TableCell><button onClick={() => navigate(`/student/${s.id}`)} className="font-black text-gray-900 uppercase hover:text-blue-700 text-left">{s.nombre}</button></TableCell>
-                  <TableCell><Chip size="sm" variant="flat" color={s.estado === 'activo' ? 'success' : 'default'} className="font-black uppercase text-[8px]">{s.estado}</Chip></TableCell>
+                  <TableCell><button onClick={() => navigate(`/student/${s.id}`)} className="font-black text-gray-900 hover:text-blue-700 text-left">{s.nombre}</button></TableCell>
+                  <TableCell><Chip size="sm" variant="flat" color={s.estado === 'activo' ? 'success' : 'default'} className="font-black text-xs">{s.estado}</Chip></TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
-                      <Button isIconOnly size="sm" variant="light" color="primary" onPress={() => navigate(`/student/${s.id}`)}><Eye size={16} /></Button>
-                      <Button isIconOnly size="sm" variant="light" color="primary" onPress={() => handleOpenModal(s)}><Pencil size={16} /></Button>
-                      <Button isIconOnly size="sm" variant="light" color="danger" onPress={() => confirmDelete(s.id)}><Trash2 size={16} /></Button>
+                      <Button isIconOnly size="sm" variant="light" color="primary" aria-label="Ver perfil" className="min-w-[36px] min-h-[36px]" onPress={() => navigate(`/student/${s.id}`)}><Eye size={16} /></Button>
+                      <Button isIconOnly size="sm" variant="light" color="primary" aria-label="Editar estudiante" className="min-w-[36px] min-h-[36px]" onPress={() => handleOpenModal(s)}><Pencil size={16} /></Button>
+                      <Button isIconOnly size="sm" variant="light" color="danger" aria-label="Eliminar estudiante" className="min-w-[36px] min-h-[36px]" onPress={() => confirmDelete(s.id)}><Trash2 size={16} /></Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -227,7 +227,7 @@ export default function ManageStudents() {
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="border-b bg-gray-50 font-black uppercase text-[#1e3b8a]">Ficha de Estudiante</ModalHeader>
+              <ModalHeader className="border-b bg-gray-50 font-black text-[#1e3b8a]">Ficha de Estudiante</ModalHeader>
               <ModalBody className="py-6 space-y-4 text-slate-900 overflow-y-auto max-h-[70vh]">
                 <Input 
                   label="NIE" isRequired variant="bordered" value={newStudent.nie} onValueChange={(v) => setNewStudent({...newStudent, nie: v})}
@@ -281,7 +281,7 @@ export default function ManageStudents() {
                   <SelectItem key="Distancia" textValue="DISTANCIA">DISTANCIA</SelectItem>
                 </Select>
               </ModalBody>
-              <ModalFooter className="bg-gray-50 border-t p-4"><Button variant="light" onPress={onClose} className="font-bold">Cerrar</Button><Button color="primary" onPress={() => handleSave(onClose)} className="bg-[#1e3b8a] font-black uppercase text-xs">Guardar</Button></ModalFooter>
+              <ModalFooter className="bg-gray-50 border-t p-4"><Button variant="light" onPress={onClose} className="font-bold">Cerrar</Button><Button color="primary" onPress={() => handleSave(onClose)} className="bg-[#1e3b8a] font-black text-xs">Guardar</Button></ModalFooter>
             </>
           )}
         </ModalContent>
@@ -291,9 +291,9 @@ export default function ManageStudents() {
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="flex flex-col gap-1 text-center"><AlertCircle className="mx-auto text-red-500 mb-2" size={40} /><h2 className="text-xl font-black uppercase text-red-600">¿Confirmar?</h2></ModalHeader>
+              <ModalHeader className="flex flex-col gap-1 text-center"><AlertCircle className="mx-auto text-red-500 mb-2" size={40} /><h2 className="text-xl font-black text-red-600">¿Confirmar?</h2></ModalHeader>
               <ModalBody className="text-center text-gray-500 font-bold text-sm leading-relaxed"><p>Esta acción es permanente y borrará todo el historial del estudiante.</p></ModalBody>
-              <ModalFooter className="flex justify-center gap-4 p-6"><Button variant="flat" onPress={onClose} className="font-black">No</Button><Button color="danger" onPress={() => handleDelete(onClose)} className="font-black uppercase text-xs">Eliminar</Button></ModalFooter>
+              <ModalFooter className="flex justify-center gap-4 p-6"><Button variant="flat" onPress={onClose} className="font-black">No</Button><Button color="danger" onPress={() => handleDelete(onClose)} className="font-black text-xs">Eliminar</Button></ModalFooter>
             </>
           )}
         </ModalContent>

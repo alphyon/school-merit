@@ -106,24 +106,24 @@ export default function ManageAdmins() {
       {notification && <Notification message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
       <div className="flex justify-between items-center mb-8 text-slate-900">
         <div>
-          <h1 className="text-3xl font-black flex items-center gap-2 uppercase"><ShieldCheck className="text-[#1e3b8a]" size={32} /> Administradores</h1>
-          <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mt-1">Gestión de privilegios</p>
+          <h1 className="text-3xl font-black flex items-center gap-2"><ShieldCheck className="text-[#1e3b8a]" size={32} /> Administradores</h1>
+          <p className="text-gray-500 text-xs font-bold tracking-widest mt-1">Gestión de privilegios</p>
         </div>
-        <Button color="primary" className="bg-[#1e3b8a] font-black uppercase shadow-lg text-xs" startContent={<Plus size={18} />} onPress={handleOpenModal}>Nuevo Admin</Button>
+        <Button color="primary" className="bg-[#1e3b8a] font-black shadow-lg text-xs" startContent={<Plus size={18} />} onPress={handleOpenModal}>Nuevo Admin</Button>
       </div>
 
       <Card className="border-none shadow-sm bg-white min-h-[400px]">
         <CardBody className="p-0 text-slate-900">
           <Table removeWrapper aria-label="Administradores">
             <TableHeader>
-              <TableColumn className="bg-gray-50 font-black text-gray-400 uppercase text-xs">Administrador</TableColumn>
-              <TableColumn className="bg-gray-50 font-black text-gray-400 uppercase text-xs">Correo</TableColumn>
-              <TableColumn className="bg-gray-50 font-black text-gray-400 uppercase text-xs text-right">Acciones</TableColumn>
+              <TableColumn className="bg-gray-50 font-black text-gray-400 text-xs">Administrador</TableColumn>
+              <TableColumn className="bg-gray-50 font-black text-gray-400 text-xs">Correo</TableColumn>
+              <TableColumn className="bg-gray-50 font-black text-gray-400 text-xs text-right">Acciones</TableColumn>
             </TableHeader>
             <TableBody emptyContent={loading ? <Spinner /> : "No hay otros administradores."}>
               {admins.map((admin) => (
                 <TableRow key={admin.id} className="border-b border-gray-50 last:border-none">
-                  <TableCell><div className="flex items-center gap-3"><Avatar name={admin.full_name?.charAt(0)} size="sm" className="bg-blue-100 text-[#1e3b8a] font-black" /><span className="font-black uppercase text-xs">{admin.full_name}</span></div></TableCell>
+                  <TableCell><div className="flex items-center gap-3"><Avatar name={admin.full_name?.charAt(0)} size="sm" className="bg-blue-100 text-[#1e3b8a] font-black" /><span className="font-black text-xs">{admin.full_name}</span></div></TableCell>
                   <TableCell className="text-gray-500 text-xs">{admin.username}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
@@ -141,7 +141,7 @@ export default function ManageAdmins() {
       <Modal isOpen={isOpen} onOpenChange={onOpenChange} backdrop="blur">
         <ModalContent>{(onClose) => (
             <>
-              <ModalHeader className="border-b bg-gray-50 font-black uppercase text-[#1e3b8a]">Registrar Administrador</ModalHeader>
+              <ModalHeader className="border-b bg-gray-50 font-black text-[#1e3b8a]">Registrar Administrador</ModalHeader>
               <ModalBody className="py-6 space-y-4 text-slate-900">
                 <Input 
                   label="Nombre Completo" isRequired variant="bordered" value={newAdmin.nombre} onValueChange={(v) => setNewAdmin({...newAdmin, nombre: v})}
@@ -166,7 +166,7 @@ export default function ManageAdmins() {
       <Modal isOpen={isDelOpen} onOpenChange={onDelOpenChange} size="sm" backdrop="blur">
         <ModalContent>{(onClose) => (
             <>
-              <ModalHeader className="flex flex-col gap-1 text-center"><AlertCircle className="mx-auto text-red-500 mb-2" size={40} /><h2 className="text-xl font-black uppercase text-red-600">¿Eliminar?</h2></ModalHeader>
+              <ModalHeader className="flex flex-col gap-1 text-center"><AlertCircle className="mx-auto text-red-500 mb-2" size={40} /><h2 className="text-xl font-black text-red-600">¿Eliminar?</h2></ModalHeader>
               <ModalBody className="text-center text-gray-500 font-bold text-sm leading-relaxed"><p>Quitarás el acceso administrativo a <strong>{adminToDelete?.full_name}</strong>.</p></ModalBody>
               <ModalFooter className="flex justify-center gap-4 p-6"><Button variant="flat" onPress={onClose}>No</Button><Button color="danger" onPress={() => handleDelete(onClose)}>Sí, eliminar</Button></ModalFooter>
             </>

@@ -162,29 +162,29 @@ export default function ManageTeachers() {
     <DashboardLayout role="admin">
       {notification && <Notification message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
       <div className="flex justify-between items-center mb-8 text-slate-900">
-        <div><h1 className="text-3xl font-black flex items-center gap-2 uppercase"><Users className="text-[#1e3b8a]" size={32} /> Docentes</h1></div>
-        <Button color="primary" className="bg-[#1e3b8a] font-black uppercase shadow-lg text-xs" startContent={<Plus size={18} />} onPress={() => handleOpenModal()}>Nuevo Docente</Button>
+        <div><h1 className="text-3xl font-black flex items-center gap-2"><Users className="text-[#1e3b8a]" size={32} /> Docentes</h1></div>
+        <Button color="primary" className="bg-[#1e3b8a] font-black shadow-lg text-xs" startContent={<Plus size={18} />} onPress={() => handleOpenModal()}>Nuevo Docente</Button>
       </div>
 
       <Card className="border-none shadow-sm bg-white min-h-[400px]">
         <CardBody className="p-0 text-slate-900">
           <Table removeWrapper aria-label="Docentes">
             <TableHeader>
-              <TableColumn className="bg-gray-50 font-black text-gray-400 uppercase text-xs">Nombre</TableColumn>
-              <TableColumn className="bg-gray-50 font-black text-gray-400 uppercase text-xs">Email</TableColumn>
-              <TableColumn className="bg-gray-50 font-black text-gray-400 uppercase text-xs">Grupos</TableColumn>
-              <TableColumn className="bg-gray-50 font-black text-gray-400 uppercase text-xs text-right">Acciones</TableColumn>
+              <TableColumn className="bg-gray-50 font-black text-gray-400 text-xs">Nombre</TableColumn>
+              <TableColumn className="bg-gray-50 font-black text-gray-400 text-xs">Email</TableColumn>
+              <TableColumn className="bg-gray-50 font-black text-gray-400 text-xs">Grupos</TableColumn>
+              <TableColumn className="bg-gray-50 font-black text-gray-400 text-xs text-right">Acciones</TableColumn>
             </TableHeader>
             <TableBody emptyContent={loading ? <Spinner /> : "No hay docentes."}>
               {teachers.map((t) => (
                 <TableRow key={t.id} className="border-b border-gray-50 last:border-none">
-                  <TableCell className="font-black uppercase text-xs">{t.nombre}</TableCell>
+                  <TableCell className="font-black text-xs">{t.nombre}</TableCell>
                   <TableCell className="text-gray-500 text-xs">{t.email}</TableCell>
                   <TableCell>
                     <div className="flex flex-wrap gap-1">
                       {t.docentes_grupos?.length > 0 ? t.docentes_grupos.map((dg: any) => {
                         const g = groups.find(gr => gr.id === dg.grupo_id);
-                        return <Chip key={dg.grupo_id} size="sm" variant="flat" color="primary" className="font-bold text-[8px]">{g?.nombre || '...'}</Chip>;
+                        return <Chip key={dg.grupo_id} size="sm" variant="flat" color="primary" className="font-bold text-xs">{g?.nombre || '...'}</Chip>;
                       }) : <span className="text-xs text-gray-300 italic">SIN ASIGNAR</span>}
                     </div>
                   </TableCell>
@@ -205,7 +205,7 @@ export default function ManageTeachers() {
       <Modal isOpen={isOpen} onOpenChange={onOpenChange} backdrop="blur">
         <ModalContent>{(onClose) => (
             <>
-              <ModalHeader className="border-b bg-gray-50 font-black uppercase text-[#1e3b8a]">{isEditing ? 'Editar' : 'Registrar'} Docente</ModalHeader>
+              <ModalHeader className="border-b bg-gray-50 font-black text-[#1e3b8a]">{isEditing ? 'Editar' : 'Registrar'} Docente</ModalHeader>
               <ModalBody className="py-6 space-y-4 text-slate-900">
                 <Input 
                   label="Nombre Completo" isRequired variant="bordered" value={newTeacher.nombre} onValueChange={(v) => setNewTeacher({...newTeacher, nombre: v})}
@@ -223,7 +223,7 @@ export default function ManageTeachers() {
                   />
                 )}
                 <div className="space-y-2">
-                  <p className="text-xs font-black text-gray-400 uppercase">Grupos Asignados</p>
+                  <p className="text-xs font-black text-gray-400">Grupos Asignados</p>
                   <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto border p-3 rounded-xl">
                     {groups.map(g => (
                       <label key={g.id} className="flex items-center gap-2 text-xs font-bold cursor-pointer hover:bg-gray-50 p-1 rounded">
@@ -245,7 +245,7 @@ export default function ManageTeachers() {
       <Modal isOpen={isDelOpen} onOpenChange={onDelOpenChange} size="sm" backdrop="blur">
         <ModalContent>{(onClose) => (
             <>
-              <ModalHeader className="flex flex-col gap-1 text-center"><AlertCircle className="mx-auto text-red-500 mb-2" size={40} /><h2 className="text-xl font-black uppercase text-red-600">¿Eliminar?</h2></ModalHeader>
+              <ModalHeader className="flex flex-col gap-1 text-center"><AlertCircle className="mx-auto text-red-500 mb-2" size={40} /><h2 className="text-xl font-black text-red-600">¿Eliminar?</h2></ModalHeader>
               <ModalBody className="text-center text-gray-500 font-bold text-sm leading-relaxed"><p>Se perderá la cuenta de acceso y grupos vinculados.</p></ModalBody>
               <ModalFooter className="flex justify-center gap-4 p-6"><Button variant="flat" onPress={onClose}>No</Button><Button color="danger" onPress={() => handleDelete(onClose)}>Sí, eliminar</Button></ModalFooter>
             </>

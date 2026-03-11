@@ -6,7 +6,7 @@ import DashboardLayout from '../layouts/DashboardLayout';
 import EventModal from '../components/EventModal';
 import { Notification } from '../components/Notification';
 import { Card, CardBody, Button, Select, SelectItem, Spinner, Avatar, Input } from "@heroui/react";
-import { Search, ShieldAlert, Award, History, LayoutDashboard, Users, CloudSync } from 'lucide-react';
+import { Search, ShieldAlert, Award, History, LayoutDashboard, Users, CloudSync, AlertTriangle, AlertCircle, Info } from 'lucide-react';
 
 export default function TeacherDashboard() {
   const navigate = useNavigate();
@@ -242,7 +242,7 @@ export default function TeacherDashboard() {
                 <CloudSync size={20} className="animate-pulse" />
               </div>
               <div>
-                <p className="text-xs font-black uppercase tracking-widest">Modo Offline Activo</p>
+                <p className="text-xs font-black tracking-widest">Modo Offline Activo</p>
                 <p className="text-xs font-bold opacity-90">Los datos se guardarán localmente y se sincronizarán al detectar conexión.</p>
               </div>
             </div>
@@ -252,15 +252,15 @@ export default function TeacherDashboard() {
 
       <div className="flex justify-between items-center mb-8 text-slate-900">
         <div>
-          <h1 className="text-3xl font-black uppercase tracking-tight flex items-center gap-3"><LayoutDashboard className="text-[#1e3b8a]" size={32} /> Panel de Alumnos</h1>
-          <p className="text-gray-500 font-bold uppercase text-xs tracking-widest mt-1">Docente: {teacherName}</p>
+          <h1 className="text-3xl font-black tracking-tight flex items-center gap-3"><LayoutDashboard className="text-[#1e3b8a]" size={32} /> Panel de Alumnos</h1>
+          <p className="text-gray-500 font-bold text-xs tracking-widest mt-1">Docente: {teacherName}</p>
         </div>
         <div className="flex gap-2">
           {pendingSyncCount > 0 && (
             <Button 
               color="warning" 
               variant="flat" 
-              className="font-black uppercase text-xs h-10 px-6 rounded-xl border-2 border-orange-100 shadow-sm" 
+              className="font-black text-xs h-10 px-6 rounded-xl border-2 border-orange-100 shadow-sm" 
               startContent={<CloudSync size={18} className={isSyncing ? "animate-spin" : ""} />}
               onPress={syncPendingEvents}
               isLoading={isSyncing}
@@ -300,11 +300,11 @@ export default function TeacherDashboard() {
           const points = s.balance_puntos || 0;
           const merits = s.puntos_limpiados || 0;
           const recognitions = s.total_reconocimientos || 0;
-          let alertMsg = ""; let alertStyle = "";
-          if (points >= 15) { alertMsg = "NO PROMOCIÓN"; alertStyle = "text-red-600 border-red-600 bg-white"; }
-          else if (points >= 10) { alertMsg = "SUSPENSIÓN"; alertStyle = "text-orange-600 border-orange-600 bg-white"; }
-          else if (points >= 6) { alertMsg = "AVISO FAMILIA"; alertStyle = "text-yellow-600 border-yellow-500 bg-yellow-50"; }
-          else if (points >= 3) { alertMsg = "ADVERTENCIA"; alertStyle = "text-blue-600 border-blue-600 bg-white"; }
+          let alertMsg = ""; let alertStyle = ""; let AlertIcon = null as React.ElementType | null;
+          if (points >= 15) { alertMsg = "NO PROMOCIÓN"; alertStyle = "text-red-600 border-red-600 bg-white"; AlertIcon = AlertTriangle; }
+          else if (points >= 10) { alertMsg = "SUSPENSIÓN"; alertStyle = "text-orange-600 border-orange-600 bg-white"; AlertIcon = AlertTriangle; }
+          else if (points >= 6) { alertMsg = "AVISO FAMILIA"; alertStyle = "text-yellow-600 border-yellow-500 bg-yellow-50"; AlertIcon = AlertCircle; }
+          else if (points >= 3) { alertMsg = "ADVERTENCIA"; alertStyle = "text-blue-600 border-blue-600 bg-white"; AlertIcon = Info; }
 
           return (
             <Card key={s.id} className="border-none shadow-sm hover:shadow-2xl transition-all duration-500 bg-white overflow-visible group">
@@ -314,34 +314,35 @@ export default function TeacherDashboard() {
                   <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 z-10">
                     <Avatar name={s.nombre} className="w-20 h-20 text-xl border-4 border-white shadow-xl bg-gray-200" />
                   </div>
-                  {alertMsg && (
-                    <div className={`absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full border-2 shadow-xl font-black text-xs z-20 animate-bounce ${alertStyle}`}>
+                  {alertMsg && AlertIcon && (
+                    <div className={`absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full border-2 shadow-xl font-black text-xs z-20 animate-bounce flex items-center gap-1 whitespace-nowrap ${alertStyle}`}>
+                      <AlertIcon size={11} />
                       {alertMsg}
                     </div>
                   )}
                 </div>
                 <div className="pt-12 px-4 pb-6 text-center">
-                  <h3 className="text-xs font-black uppercase leading-tight line-clamp-3 min-h-[3rem] mb-4 hover:text-blue-700 cursor-pointer" onClick={() => navigate(`/student/${s.id}`)}>{s.nombre}</h3>
+                  <h3 className="text-xs font-black leading-normal line-clamp-3 min-h-[3rem] mb-4 hover:text-blue-700 cursor-pointer" onClick={() => navigate(`/student/${s.id}`)}>{s.nombre}</h3>
                   
-                  <div className="flex justify-between gap-1 mb-6">
-                    <div className="bg-red-50 p-2 rounded-xl flex-1 border border-red-100 shadow-inner">
-                      <span className="block text-lg font-black text-red-600">{points}</span>
-                      <span className="text-[7px] font-black text-red-400 uppercase">Deméritos</span>
+                  <div className="flex justify-between gap-1 mb-4">
+                    <div title="Deméritos activos" className="bg-red-50 p-1.5 rounded-xl flex-1 border border-red-100 shadow-inner text-center">
+                      <span className="block text-sm font-black text-red-600">{points}</span>
+                      <ShieldAlert size={10} className="text-red-400 mx-auto" />
                     </div>
-                    <div className="bg-emerald-50 p-2 rounded-xl flex-1 border border-emerald-100 shadow-inner">
-                      <span className="block text-lg font-black text-emerald-600">{merits}</span>
-                      <span className="text-[7px] font-black text-emerald-400 uppercase">Redimidos</span>
+                    <div title="Puntos redimidos" className="bg-emerald-50 p-1.5 rounded-xl flex-1 border border-emerald-100 shadow-inner text-center">
+                      <span className="block text-sm font-black text-emerald-600">{merits}</span>
+                      <History size={10} className="text-emerald-400 mx-auto" />
                     </div>
-                    <div className="bg-purple-50 p-2 rounded-xl flex-1 border border-purple-100 shadow-inner">
-                      <span className="block text-lg font-black text-purple-600">{recognitions}</span>
-                      <span className="text-[7px] font-black text-purple-400 uppercase">Reconoc.</span>
+                    <div title="Reconocimientos" className="bg-purple-50 p-1.5 rounded-xl flex-1 border border-purple-100 shadow-inner text-center">
+                      <span className="block text-sm font-black text-purple-600">{recognitions}</span>
+                      <Award size={10} className="text-purple-400 mx-auto" />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-3 gap-2 relative z-30">
-                    <Button aria-label="Registrar demérito" size="sm" isIconOnly className="bg-red-100 text-red-700 h-10 w-full" onClick={(e) => handleAction(e, s, 'demerito')}><ShieldAlert size={18} /></Button>
-                    <Button aria-label="Registrar redención" size="sm" isIconOnly className="bg-emerald-100 text-emerald-700 h-10 w-full" onClick={(e) => handleAction(e, s, 'redencion')}><History size={18} /></Button>
-                    <Button aria-label="Registrar reconocimiento" size="sm" isIconOnly className="bg-purple-100 text-purple-700 h-10 w-full" onClick={(e) => handleAction(e, s, 'reconocimiento')}><Award size={18} /></Button>
+                    <Button aria-label="Registrar demérito" size="md" isIconOnly className="bg-red-500 text-white h-12 w-full rounded-xl shadow-sm" onClick={(e) => handleAction(e, s, 'demerito')}><ShieldAlert size={20} /></Button>
+                    <Button aria-label="Registrar redención" size="md" isIconOnly className="bg-emerald-500 text-white h-12 w-full rounded-xl shadow-sm" onClick={(e) => handleAction(e, s, 'redencion')}><History size={20} /></Button>
+                    <Button aria-label="Registrar reconocimiento" size="md" isIconOnly className="bg-purple-500 text-white h-12 w-full rounded-xl shadow-sm" onClick={(e) => handleAction(e, s, 'reconocimiento')}><Award size={20} /></Button>
                   </div>
                 </div>
               </CardBody>

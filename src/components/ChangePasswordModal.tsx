@@ -62,7 +62,7 @@ export default function ChangePasswordModal({ isOpen, onOpenChange, targetUserId
         {(onClose) => (
           <>
             {notification && <Notification message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
-            <ModalHeader className="flex flex-col gap-1 uppercase font-black text-sm tracking-widest">
+            <ModalHeader className="flex flex-col gap-1 font-black text-sm tracking-widest">
               {targetUserId ? 'Forzar Nueva Contraseña' : 'Cambiar mi Contraseña'}
             </ModalHeader>
             <ModalBody className="space-y-4 py-6">

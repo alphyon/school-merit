@@ -107,8 +107,8 @@ export default function Login() {
               <div className="size-24 bg-blue-600/5 rounded-3xl flex items-center justify-center mb-4 overflow-hidden shadow-inner">
                 {logoUrl ? <img src={logoUrl} className="size-full object-contain p-2" alt="Logo" /> : <GraduationCap className="text-[#1e3b8a] w-12 h-12" />}
               </div>
-              <h1 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight leading-tight">{schoolName}</h1>
-              <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest mt-2">Control de Gestión de Deméritos</p>
+              <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">{schoolName}</h1>
+              <p className="text-slate-400 text-xs font-black tracking-widest mt-2">Control de Gestión de Deméritos</p>
             </div>
 
             <form onSubmit={handleLogin} className="space-y-5">
@@ -132,7 +132,7 @@ export default function Login() {
                 endContent={<button type="button" onClick={toggleVisibility}>{isVisible ? <EyeOff size={20} className="text-slate-400" /> : <Eye size={20} className="text-slate-400" />}</button>}
               />
 
-              <Button type="submit" color="primary" className="w-full h-14 font-black uppercase tracking-widest bg-[#1e3b8a]" isLoading={isLoading}>Entrar al Sistema</Button>
+              <Button type="submit" color="primary" className="w-full h-14 font-black tracking-widest bg-[#1e3b8a]" isLoading={isLoading}>Entrar al Sistema</Button>
             </form>
           </CardBody>
         </Card>

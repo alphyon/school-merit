@@ -7,8 +7,8 @@ import { Instrument001 } from '../components/reports/Instrument001';
 import { Notification } from '../components/Notification';
 import EventModal from '../components/EventModal';
 import { Card, CardBody, Avatar, Button, Spinner, Pagination, Chip, Tabs, Tab, Select, SelectItem } from "@heroui/react";
-import { 
-  Printer, ArrowLeft, BadgeCheck, ShieldAlert, Award, History
+import {
+  Printer, ArrowLeft, BadgeCheck, ShieldAlert, Award, History, AlertTriangle, AlertCircle, Info
 } from 'lucide-react';
 
 export default function StudentProfile() {
@@ -130,9 +130,9 @@ export default function StudentProfile() {
       <div className="flex justify-between items-center mb-8">
         <Button variant="flat" size="sm" className="font-bold text-gray-500 bg-white" startContent={<ArrowLeft size={18} />} onPress={() => navigate(-1)}>Volver</Button>
         <div className="flex gap-2">
-          <Button size="sm" color="danger" variant="flat" className="font-black uppercase text-xs" onPress={() => handleOpenAction('demerito')}>Falta</Button>
-          <Button size="sm" color="success" variant="flat" className="font-black uppercase text-xs" onPress={() => handleOpenAction('redencion')}>Redención</Button>
-          <Button size="sm" color="secondary" variant="flat" className="font-black uppercase text-xs" onPress={() => handleOpenAction('reconocimiento')}>Premio</Button>
+          <Button size="sm" color="danger" variant="flat" className="font-black text-xs" onPress={() => handleOpenAction('demerito')}>Falta</Button>
+          <Button size="sm" color="success" variant="flat" className="font-black text-xs" onPress={() => handleOpenAction('redencion')}>Redención</Button>
+          <Button size="sm" color="secondary" variant="flat" className="font-black text-xs" onPress={() => handleOpenAction('reconocimiento')}>Premio</Button>
         </div>
       </div>
 
@@ -145,50 +145,50 @@ export default function StudentProfile() {
               <div className="flex flex-col md:flex-row items-center gap-8 mb-10">
                 <Avatar className="h-24 w-24 border-4 border-gray-50 shadow-lg" name={student?.nombre} />
                 <div className="flex-1 text-center md:text-left">
-                  <h1 className="text-2xl font-black uppercase tracking-tighter mb-1">{student?.nombre}</h1>
-                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">NIE: {student?.nie} | {student?.grupo_nombre}</p>
+                  <h1 className="text-2xl font-black tracking-tighter mb-1">{student?.nombre}</h1>
+                  <p className="text-xs font-bold text-gray-400 tracking-widest mb-2">NIE: {student?.nie} | {student?.grupo_nombre}</p>
                   
                   <div className="flex flex-wrap justify-center md:justify-start gap-6 mb-4">
                     <div className="flex flex-col">
-                      <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Responsable</span>
-                      <span className="text-xs font-bold text-slate-700 uppercase">{student?.responsable || 'NO REGISTRADO'}</span>
+                      <span className="text-xs font-black text-gray-400 tracking-widest">Responsable</span>
+                      <span className="text-xs font-bold text-slate-700">{student?.responsable || 'NO REGISTRADO'}</span>
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest">DUI</span>
+                      <span className="text-xs font-black text-gray-400 tracking-widest">DUI</span>
                       <span className="text-xs font-bold text-slate-700">{student?.dui_responsable || '---'}</span>
                     </div>
                     <div className="flex flex-col">
-                      <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Contacto</span>
+                      <span className="text-xs font-black text-gray-400 tracking-widest">Contacto</span>
                       <span className="text-xs font-bold text-[#1e3b8a]">{student?.telefono_responsable || 'SIN TELÉFONO'}</span>
                     </div>
                   </div>
 
                   <div className="flex flex-wrap justify-center md:justify-start gap-2">
-                    {stats.balance >= 15 && <Chip color="danger" variant="solid" className="font-black animate-pulse text-[10px]">NO PROMOCIÓN</Chip>}
-                    {stats.balance >= 10 && stats.balance < 15 && <Chip color="warning" variant="solid" className="font-black text-[10px]">SUSPENSIÓN</Chip>}
-                    {stats.balance >= 6 && stats.balance < 10 && <Chip color="warning" variant="flat" className="font-black text-[10px]">AVISO FAMILIA</Chip>}
-                    {stats.balance >= 3 && stats.balance < 6 && <Chip color="primary" variant="flat" className="font-black text-[10px]">ADVERTENCIA</Chip>}
+                    {stats.balance >= 15 && <Chip color="danger" variant="solid" className="font-black animate-pulse text-xs" startContent={<AlertTriangle size={12} />}>NO PROMOCIÓN</Chip>}
+                    {stats.balance >= 10 && stats.balance < 15 && <Chip color="warning" variant="solid" className="font-black text-xs" startContent={<AlertTriangle size={12} />}>SUSPENSIÓN</Chip>}
+                    {stats.balance >= 6 && stats.balance < 10 && <Chip color="warning" variant="flat" className="font-black text-xs" startContent={<AlertCircle size={12} />}>AVISO FAMILIA</Chip>}
+                    {stats.balance >= 3 && stats.balance < 6 && <Chip color="primary" variant="flat" className="font-black text-xs" startContent={<Info size={12} />}>ADVERTENCIA</Chip>}
                   </div>
                 </div>
-                <Button color="primary" className="bg-[#1e3b8a] font-black uppercase text-xs h-12 px-8" startContent={<Printer size={18} />} onPress={() => handlePrint()}>Imprimir</Button>
+                <Button color="primary" className="bg-[#1e3b8a] font-black text-xs h-12 px-8" startContent={<Printer size={18} />} onPress={() => handlePrint()}>Imprimir</Button>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100 text-center"><p className="text-gray-400 text-xs font-black uppercase mb-1">Histórico</p><p className="text-3xl font-black text-gray-600">{stats.historico}</p></div>
-                <div className="p-5 rounded-2xl bg-emerald-50 border border-emerald-100 text-center"><p className="text-emerald-400 text-xs font-black uppercase mb-1">Redimidos</p><p className="text-3xl font-black text-emerald-600">+{stats.limpiados}</p></div>
-                <div className="p-5 rounded-2xl bg-red-50 border-2 border-red-200 text-center"><p className="text-red-400 text-xs font-black uppercase mb-1">Balance Actual</p><p className="text-3xl font-black text-red-600">{stats.balance}</p></div>
+                <div className="p-5 rounded-2xl bg-slate-50 border border-slate-100 text-center"><p className="text-gray-400 text-xs font-black mb-1">Histórico</p><p className="text-3xl font-black text-gray-600">{stats.historico}</p></div>
+                <div className="p-5 rounded-2xl bg-emerald-50 border border-emerald-100 text-center"><p className="text-emerald-400 text-xs font-black mb-1">Redimidos</p><p className="text-3xl font-black text-emerald-600">+{stats.limpiados}</p></div>
+                <div className="p-5 rounded-2xl bg-red-50 border-2 border-red-200 text-center"><p className="text-red-400 text-xs font-black mb-1">Balance Actual</p><p className="text-3xl font-black text-red-600">{stats.balance}</p></div>
               </div>
             </CardBody>
           </Card>
 
           <Card className="mb-8 border-none shadow-sm bg-white">
             <CardBody className="p-4 flex flex-col md:flex-row gap-4 items-end">
-              <div className="flex-1"><h2 className="text-sm font-black uppercase text-gray-900 flex items-center gap-2 mb-2"><History size={18} className="text-[#1e3b8a]" /> Historial</h2></div>
+              <div className="flex-1"><h2 className="text-sm font-black text-gray-900 flex items-center gap-2 mb-2"><History size={18} className="text-[#1e3b8a]" /> Historial</h2></div>
               <div className="w-full md:w-48"><Select label="Mes" size="sm" variant="bordered" selectedKeys={[selectedMonth]} onSelectionChange={(k) => setSelectedMonth(Array.from(k)[0] as string)}>{months.map((m) => <SelectItem key={m.key}>{m.label}</SelectItem>)}</Select></div>
               <div className="w-full md:w-32"><Select label="Año" size="sm" variant="bordered" selectedKeys={[selectedYear]} onSelectionChange={(k) => setSelectedYear(Array.from(k)[0] as string)}>{["2024", "2025", "2026"].map((y) => <SelectItem key={y}>{y}</SelectItem>)}</Select></div>
             </CardBody>
           </Card>
 
-          <Tabs selectedKey={activeTab} onSelectionChange={(k) => { setActiveTab(k as string); setPage(1); }} variant="underlined" color="primary" classNames={{ tabList: "mb-6", tabContent: "font-black uppercase text-xs" }}>
+          <Tabs selectedKey={activeTab} onSelectionChange={(k) => { setActiveTab(k as string); setPage(1); }} variant="underlined" color="primary" classNames={{ tabList: "mb-6", tabContent: "font-black text-xs" }}>
             <Tab key="active" title="Pendientes" />
             <Tab key="redeemed" title="Redenciones" />
             <Tab key="recognition" title="Premios" />
@@ -210,15 +210,15 @@ export default function StudentProfile() {
                         </div>
                         <div>
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xs font-black text-gray-400 uppercase">{new Date(ev.fecha).toLocaleDateString()}</span>
-                            {isRed && <Chip size="sm" variant="flat" color="primary" className="h-4 text-[8px] font-black uppercase">Redención Aplicada</Chip>}
-                            {isDem && ev.estado === 'redimido' && <Chip size="sm" variant="flat" color="success" className="h-4 text-[8px] font-black uppercase">Redimido</Chip>}
+                            <span className="text-xs font-black text-gray-400">{new Date(ev.fecha).toLocaleDateString()}</span>
+                            {isRed && <Chip size="sm" variant="flat" color="primary" className="h-4 text-xs font-black">Redención Aplicada</Chip>}
+                            {isDem && ev.estado === 'redimido' && <Chip size="sm" variant="flat" color="success" className="h-4 text-xs font-black">Redimido</Chip>}
                           </div>
-                          <h3 className="font-black text-gray-900 uppercase text-sm">{ev.code}: {ev.title}</h3>
-                          {isRed && ev.refInfo && <p className="text-xs font-bold text-gray-500 uppercase italic mt-1">Limpió falta: {ev.refInfo}</p>}
-                          <p className="text-gray-500 text-xs mt-1 italic">{ev.observaciones || 'Sin detalles'}</p>
+                          <h3 className="font-black text-gray-900 text-sm">{ev.code}: {ev.title}</h3>
+                          {isRed && ev.refInfo && <p className="text-xs font-bold text-gray-500 italic mt-1">Limpió falta: {ev.refInfo}</p>}
+                          <p className="text-gray-500 text-xs mt-1 leading-normal">{ev.observaciones || 'Sin detalles'}</p>
                           {isDem && ev.estado === 'activo' && (
-                            <Button size="sm" color="success" variant="flat" className="mt-3 font-black text-xs h-7 uppercase" onPress={() => handleOpenAction('redencion', ev.id)}>Redimir ahora</Button>
+                            <Button size="sm" color="success" variant="flat" className="mt-3 font-black text-xs h-7" onPress={() => handleOpenAction('redencion', ev.id)}>Redimir ahora</Button>
                           )}
                         </div>
                       </div>

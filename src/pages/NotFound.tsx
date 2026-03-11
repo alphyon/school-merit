@@ -16,7 +16,7 @@ export default function NotFound() {
         
         <div className="space-y-2">
           <h1 className="text-8xl font-black text-[#1e3b8a] opacity-20">404</h1>
-          <h2 className="text-2xl font-black text-slate-900 dark:text-white uppercase tracking-tight">Página no encontrada</h2>
+          <h2 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Página no encontrada</h2>
           <p className="text-slate-500 font-medium">Lo sentimos, la ruta que intentas acceder no existe o no tienes permisos para verla.</p>
         </div>
 
@@ -24,7 +24,7 @@ export default function NotFound() {
           <CardBody className="p-8 flex flex-col gap-3">
             <Button 
               color="primary" 
-              className="bg-[#1e3b8a] font-black uppercase text-xs tracking-widest h-14 shadow-lg shadow-primary/20"
+              className="bg-[#1e3b8a] font-black text-xs tracking-widest h-14 shadow-lg shadow-primary/20"
               startContent={<Home size={18} />}
               onPress={() => navigate('/')}
             >
@@ -32,7 +32,7 @@ export default function NotFound() {
             </Button>
             <Button 
               variant="light" 
-              className="font-bold text-slate-400 uppercase text-xs tracking-widest"
+              className="font-bold text-slate-400 text-xs tracking-widest"
               startContent={<ArrowLeft size={14} />}
               onPress={() => navigate(-1)}
             >
@@ -41,7 +41,7 @@ export default function NotFound() {
           </CardBody>
         </Card>
 
-        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">Sistema de Gestión de Deméritos</p>
+        <p className="text-xs font-black text-slate-400 tracking-[0.3em]">Sistema de Gestión de Deméritos</p>
       </div>
     </div>
   );

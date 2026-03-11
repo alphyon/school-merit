@@ -157,11 +157,11 @@ export default function EventModal({ isOpen, onOpenChange, studentId, studentNam
           <>
             {notification && <Notification message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
             <ModalHeader className="flex flex-col gap-1 border-b border-slate-100 bg-slate-50/50">
-              <h2 className="text-xl font-black text-[#1e3b8a] uppercase">Registro Conductual</h2>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Alumno: {studentName}</p>
+              <h2 className="text-xl font-black text-[#1e3b8a]">Registro Conductual</h2>
+              <p className="text-xs font-bold text-slate-400 tracking-widest">Alumno: {studentName}</p>
             </ModalHeader>
             <ModalBody className="py-6 space-y-6">
-              <Tabs aria-label="Tipo" color={activeTab === "demerito" ? "danger" : (activeTab === "redencion" ? "success" : "secondary")} variant="solid" fullWidth selectedKey={activeTab} onSelectionChange={(key) => handleTabChange(key as string)} classNames={{ tabList: "p-1 bg-slate-100 rounded-xl", tabContent: "font-black uppercase text-xs" }}>
+              <Tabs aria-label="Tipo" color={activeTab === "demerito" ? "danger" : (activeTab === "redencion" ? "success" : "secondary")} variant="solid" fullWidth selectedKey={activeTab} onSelectionChange={(key) => handleTabChange(key as string)} classNames={{ tabList: "p-1 bg-slate-100 rounded-xl", tabContent: "font-black text-xs" }}>
                 <Tab key="demerito" title={<div className="flex items-center space-x-2"><ShieldAlert size={16} /><span>Demérito</span></div>} />
                 <Tab key="redencion" title={<div className="flex items-center space-x-2"><BadgeCheck size={16} /><span>Redención</span></div>} />
                 <Tab key="reconocimiento" title={<div className="flex items-center space-x-2"><Award size={16} /><span>Reconocimiento</span></div>} />
@@ -169,14 +169,14 @@ export default function EventModal({ isOpen, onOpenChange, studentId, studentNam
 
               {activeTab === 'redencion' && (
                 <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100">
-                  <p className="text-xs font-black text-blue-600 uppercase mb-3 flex items-center gap-2"><AlertCircle size={14} /> Demérito a redimir:</p>
+                  <p className="text-xs font-black text-blue-600 mb-3 flex items-center gap-2"><AlertCircle size={14} /> Demérito a redimir:</p>
                   {!navigator.onLine && (
-                    <div className="mb-3 p-3 bg-red-50 border border-red-100 rounded-xl text-xs font-black text-red-600 uppercase">
+                    <div className="mb-3 p-3 bg-red-50 border border-red-100 rounded-xl text-xs font-black text-red-600">
                       ⚠️ Se requiere internet para ver las faltas activas del alumno.
                     </div>
                   )}
                   {initialDemeritId ? (
-                    <div className="p-3 bg-white rounded-xl border border-blue-200 font-bold text-xs text-blue-700 uppercase">
+                    <div className="p-3 bg-white rounded-xl border border-blue-200 font-bold text-xs text-blue-700">
                       {activeDemerits.find(d => d.id === initialDemeritId)?.demeritos_catalogo?.descripcion || "Falta seleccionada..."}
                     </div>
                   ) : (
@@ -201,7 +201,7 @@ export default function EventModal({ isOpen, onOpenChange, studentId, studentNam
                         <Chip size="sm" variant="solid" className="font-black text-xs">{item.codigo}</Chip>
                         {item.puntos_valor > 0 && activeTab !== 'reconocimiento' && <span className="font-black text-xs">+{item.puntos_valor} PTS</span>}
                       </div>
-                      <p className="text-sm font-bold text-slate-700 leading-tight">{item.descripcion}</p>
+                      <p className="text-sm font-bold text-slate-700 leading-normal">{item.descripcion}</p>
                     </div>
                   ))
                 )}
@@ -209,10 +209,10 @@ export default function EventModal({ isOpen, onOpenChange, studentId, studentNam
               <Textarea label="Observaciones" placeholder="Detalles..." variant="bordered" minRows={2} value={observaciones} onValueChange={setObservations} />
             </ModalBody>
             <ModalFooter className="bg-slate-50/50 border-t border-slate-100 p-4">
-              <Button variant="light" onPress={() => onClose()} className="font-black text-slate-400 uppercase text-xs">Cerrar</Button>
+              <Button variant="light" onPress={() => onClose()} className="font-black text-slate-400 text-xs">Cerrar</Button>
               <Button
                 color={activeTab === 'demerito' ? "danger" : (activeTab === 'redencion' ? "success" : "secondary")}
-                className={`font-black uppercase text-xs h-10 px-8 text-white shadow-lg`}
+                className={`font-black text-xs h-10 px-8 text-white shadow-lg`}
                 onPress={() => handleSubmit(onClose)}
                 isLoading={isSubmitting}
                 isDisabled={!selectedItem || (activeTab === 'redencion' && !navigator.onLine)}

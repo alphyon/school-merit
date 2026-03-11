@@ -68,12 +68,12 @@ export default function ManageCatalogs() {
     <DashboardLayout role="admin">
       {notification && <Notification message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
       <div className="flex justify-between items-center mb-8 text-slate-900">
-        <div><h1 className="text-3xl font-black uppercase tracking-tight flex items-center gap-3"><Gavel className="text-[#1e3b8a]" size={32} /> Catálogos</h1></div>
-        <Button color="primary" className="bg-[#1e3b8a] font-black uppercase shadow-lg text-xs" startContent={<Plus size={18} />} onPress={() => handleOpenModal()}>Nuevo Registro</Button>
+        <div><h1 className="text-3xl font-black tracking-tight flex items-center gap-3"><Gavel className="text-[#1e3b8a]" size={32} /> Catálogos</h1></div>
+        <Button color="primary" className="bg-[#1e3b8a] font-black shadow-lg text-xs" startContent={<Plus size={18} />} onPress={() => handleOpenModal()}>Nuevo Registro</Button>
       </div>
 
       <div className="space-y-6 text-slate-900">
-        <Tabs aria-label="Catálogos" color={activeTab === "demerito" ? "danger" : (activeTab === "redencion" ? "success" : "secondary")} variant="underlined" selectedKey={activeTab} onSelectionChange={(key) => setActiveTab(key as string)} classNames={{ tabList: "gap-6 border-b", tabContent: "font-black uppercase tracking-widest text-xs" }}>
+        <Tabs aria-label="Catálogos" color={activeTab === "demerito" ? "danger" : (activeTab === "redencion" ? "success" : "secondary")} variant="underlined" selectedKey={activeTab} onSelectionChange={(key) => setActiveTab(key as string)} classNames={{ tabList: "gap-6 border-b", tabContent: "font-black tracking-widest text-xs" }}>
           <Tab key="demerito" title={<div className="flex items-center space-x-2"><ShieldAlert size={18} /><span>Deméritos</span></div>} />
           <Tab key="redencion" title={<div className="flex items-center space-x-2"><HeartHandshake size={18} /><span>Redenciones</span></div>} />
           <Tab key="reconocimiento" title={<div className="flex items-center space-x-2"><Award size={18} /><span>Reconocimientos</span></div>} />
@@ -83,10 +83,10 @@ export default function ManageCatalogs() {
           <CardBody className="p-0 text-slate-900">
             <Table removeWrapper aria-label="Tabla de catálogo">
               <TableHeader>
-                <TableColumn className="bg-gray-50 font-black text-gray-400 uppercase text-xs">Código</TableColumn>
-                <TableColumn className="bg-gray-50 font-black text-gray-400 uppercase text-xs">Descripción</TableColumn>
-                <TableColumn className="bg-gray-50 font-black text-gray-400 uppercase text-xs">Puntos</TableColumn>
-                <TableColumn className="bg-gray-50 font-black text-gray-400 uppercase text-xs text-right">Acciones</TableColumn>
+                <TableColumn className="bg-gray-50 font-black text-gray-400 text-xs">Código</TableColumn>
+                <TableColumn className="bg-gray-50 font-black text-gray-400 text-xs">Descripción</TableColumn>
+                <TableColumn className="bg-gray-50 font-black text-gray-400 text-xs">Puntos</TableColumn>
+                <TableColumn className="bg-gray-50 font-black text-gray-400 text-xs text-right">Acciones</TableColumn>
               </TableHeader>
               <TableBody emptyContent={loading ? <Spinner /> : "Sin registros."}>
                 {items.map((item) => (
@@ -112,13 +112,13 @@ export default function ManageCatalogs() {
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="border-b bg-gray-50 font-black uppercase text-[#1e3b8a]">Ficha de Catálogo</ModalHeader>
+              <ModalHeader className="border-b bg-gray-50 font-black text-[#1e3b8a]">Ficha de Catálogo</ModalHeader>
               <ModalBody className="py-6 space-y-4 text-slate-900">
                 <Input label="Código" variant="bordered" value={currentItem.codigo} onValueChange={(v) => setCurrentItem({...currentItem, codigo: v})} />
                 <Input label="Descripción" variant="bordered" value={currentItem.descripcion} onValueChange={(v) => setCurrentItem({...currentItem, descripcion: v})} />
                 {activeTab !== 'reconocimiento' && <Input type="number" label="Puntos" variant="bordered" value={currentItem.puntos_valor.toString()} onValueChange={(v) => setCurrentItem({...currentItem, puntos_valor: Number(v)})} />}
               </ModalBody>
-              <ModalFooter className="bg-gray-50 border-t p-4"><Button variant="light" onPress={onClose} className="font-bold uppercase text-xs">Cerrar</Button><Button color="primary" onPress={() => handleSave(onClose)} className="bg-[#1e3b8a] font-black uppercase text-xs shadow-lg">Guardar Cambios</Button></ModalFooter>
+              <ModalFooter className="bg-gray-50 border-t p-4"><Button variant="light" onPress={onClose} className="font-bold text-xs">Cerrar</Button><Button color="primary" onPress={() => handleSave(onClose)} className="bg-[#1e3b8a] font-black text-xs shadow-lg">Guardar Cambios</Button></ModalFooter>
             </>
           )}
         </ModalContent>
@@ -128,9 +128,9 @@ export default function ManageCatalogs() {
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="flex flex-col gap-1 text-center"><AlertCircle className="mx-auto text-red-500 mb-2" size={40} /><h2 className="text-xl font-black uppercase text-red-600">¿Eliminar registro?</h2></ModalHeader>
+              <ModalHeader className="flex flex-col gap-1 text-center"><AlertCircle className="mx-auto text-red-500 mb-2" size={40} /><h2 className="text-xl font-black text-red-600">¿Eliminar registro?</h2></ModalHeader>
               <ModalBody className="text-center text-gray-500 font-bold text-sm">Esta acción es irreversible y afectará reportes pasados.</ModalBody>
-              <ModalFooter className="flex justify-center gap-4 p-6"><Button variant="flat" onPress={onClose} className="font-black uppercase text-xs">No</Button><Button color="danger" onPress={() => handleDelete(onClose)} className="font-black uppercase text-xs shadow-lg">Sí, Eliminar</Button></ModalFooter>
+              <ModalFooter className="flex justify-center gap-4 p-6"><Button variant="flat" onPress={onClose} className="font-black text-xs">No</Button><Button color="danger" onPress={() => handleDelete(onClose)} className="font-black text-xs shadow-lg">Sí, Eliminar</Button></ModalFooter>
             </>
           )}
         </ModalContent>

@@ -65,7 +65,7 @@ export default function AdminSettings() {
       {notification && <Notification message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
       
       <div className="mb-8">
-        <h1 className="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-2 uppercase">
+        <h1 className="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-2">
           <Settings className="text-[#1e3b8a]" size={32} /> Configuración Global
         </h1>
       </div>
@@ -75,7 +75,7 @@ export default function AdminSettings() {
           <Card className="border-none shadow-sm bg-white">
             <CardBody className="p-6 space-y-8">
               <div className="space-y-6">
-                <div className="flex items-center gap-2 text-[#1e3b8a] font-black uppercase text-xs tracking-widest border-b pb-2">
+                <div className="flex items-center gap-2 text-[#1e3b8a] font-black text-xs tracking-widest border-b pb-2">
                   <School size={18} /> Datos de la Institución
                 </div>
                 <div className="flex flex-col md:flex-row gap-8 items-center bg-gray-50 p-6 rounded-2xl border border-gray-100">
@@ -89,13 +89,13 @@ export default function AdminSettings() {
                     <Input label="Nombre del C.E." variant="bordered" value={settings.nombre_escuela} onValueChange={(v) => setSettings({...settings, nombre_escuela: v})} />
                     <Input label="Código del C.E." variant="bordered" value={settings.codigo_ce} onValueChange={(v) => setSettings({...settings, codigo_ce: v})} />
                     <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
-                    <Button variant="flat" color="primary" className="w-full font-bold text-xs uppercase" startContent={<Upload size={16} />} onPress={() => fileInputRef.current?.click()}>Subir Logo</Button>
+                    <Button variant="flat" color="primary" className="w-full font-bold text-xs" startContent={<Upload size={16} />} onPress={() => fileInputRef.current?.click()}>Subir Logo</Button>
                   </div>
                 </div>
               </div>
 
               <div className="space-y-6">
-                <div className="flex items-center gap-2 text-slate-500 font-black uppercase text-xs tracking-widest border-b pb-2">
+                <div className="flex items-center gap-2 text-slate-500 font-black text-xs tracking-widest border-b pb-2">
                   <MapPin size={18} /> Ubicación
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -106,25 +106,25 @@ export default function AdminSettings() {
               </div>
               
               <div className="space-y-6">
-                <div className="flex items-center gap-2 text-red-600 font-black uppercase text-xs tracking-widest border-b pb-2">
+                <div className="flex items-center gap-2 text-red-600 font-black text-xs tracking-widest border-b pb-2">
                   <ShieldAlert size={18} /> Reglas
                 </div>
                 <Input label="Límite para Alerta" type="number" variant="bordered" value={settings.limite_demeritos_alerta.toString()} onValueChange={(v) => setSettings({...settings, limite_demeritos_alerta: Number(v)})} />
               </div>
 
               <div className="space-y-6">
-                <div className="flex items-center gap-2 text-emerald-600 font-black uppercase text-xs tracking-widest border-b pb-2">
+                <div className="flex items-center gap-2 text-emerald-600 font-black text-xs tracking-widest border-b pb-2">
                   <FileSpreadsheet size={18} /> Formatos de Carga
                 </div>
                 <div className="bg-emerald-50 p-6 rounded-2xl border border-emerald-100 flex items-center justify-between">
                   <div>
-                    <p className="text-emerald-900 font-black text-xs uppercase">Plantilla de Alumnos</p>
+                    <p className="text-emerald-900 font-black text-xs">Plantilla de Alumnos</p>
                     <p className="text-xs text-emerald-700 font-medium">Descargue el formato base para la carga masiva de estudiantes.</p>
                   </div>
                   <Button 
                     color="success" 
                     variant="flat" 
-                    className="font-black text-xs uppercase h-10" 
+                    className="font-black text-xs h-10" 
                     startContent={<Download size={16} />}
                     onPress={downloadStudentTemplate}
                   >
@@ -133,7 +133,7 @@ export default function AdminSettings() {
                 </div>
               </div>
 
-              <Button color="primary" className="bg-[#1e3b8a] font-black h-14 w-full shadow-xl uppercase" startContent={<Save size={20} />} isLoading={isSaving} onPress={handleSaveSettings}>Guardar Todo</Button>
+              <Button color="primary" className="bg-[#1e3b8a] font-black h-14 w-full shadow-xl" startContent={<Save size={20} />} isLoading={isSaving} onPress={handleSaveSettings}>Guardar Todo</Button>
             </CardBody>
           </Card>
         </div>

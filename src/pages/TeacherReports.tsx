@@ -120,17 +120,17 @@ export default function TeacherReports() {
       {notification && <Notification message={notification.message} type={notification.type} onClose={() => setNotification(null)} />}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 text-slate-900">
         <div>
-          <h1 className="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-2 uppercase"><FileSpreadsheet className="text-[#1e3b8a]" size={32} /> Reportes Docente</h1>
+          <h1 className="text-3xl font-black text-gray-900 tracking-tight flex items-center gap-2"><FileSpreadsheet className="text-[#1e3b8a]" size={32} /> Reportes Docente</h1>
           <div className="flex items-center gap-2 mt-1">
-            <p className="text-gray-500 font-bold uppercase text-xs tracking-widest">Instrumento No. 002</p>
+            <p className="text-gray-500 font-bold text-xs tracking-widest">Instrumento No. 002</p>
             {!navigator.onLine && (
-              <span className="bg-red-100 text-red-700 px-3 py-0.5 rounded-full text-xs font-black uppercase border border-red-200">Offline - Consulta limitada</span>
+              <span className="bg-red-100 text-red-700 px-3 py-0.5 rounded-full text-xs font-black border border-red-200">Offline - Consulta limitada</span>
             )}
           </div>
         </div>
         <Button 
           color="primary" 
-          className="bg-[#1e3b8a] font-black uppercase text-xs h-12 shadow-lg px-8" 
+          className="bg-[#1e3b8a] font-black text-xs h-12 shadow-lg px-8" 
           startContent={<Printer size={18} />} 
           onPress={() => handlePrint()}
           isDisabled={!navigator.onLine}
@@ -144,7 +144,7 @@ export default function TeacherReports() {
           <CardBody className="p-4 flex flex-row items-center gap-4">
             <div className="bg-amber-100 p-2 rounded-full"><FileSpreadsheet size={20} /></div>
             <div>
-              <p className="text-xs font-black uppercase">Modo Offline Detectado</p>
+              <p className="text-xs font-black">Modo Offline Detectado</p>
               <p className="text-xs font-bold">Los reportes requieren conexión para consultar datos históricos completos en la nube.</p>
             </div>
           </CardBody>
@@ -163,10 +163,10 @@ export default function TeacherReports() {
       {isLoading ? ( <div className="flex justify-center py-20"><Spinner size="lg" /></div> ) : (
         <div className="space-y-8 text-slate-900">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-             <Card className="border-none shadow-sm bg-white p-6 flex flex-row items-center gap-4"><div className="p-4 bg-blue-50 text-blue-600 rounded-2xl font-black uppercase text-xs">Matrícula</div><div><p className="text-2xl font-black">{stats.totalStudents}</p></div></Card>
-             <Card className="border-none shadow-sm bg-white p-6 flex flex-row items-center gap-4"><div className="p-4 bg-red-50 text-red-600 rounded-2xl font-black uppercase text-xs">Deméritos Anual</div><div><p className="text-2xl font-black">{stats.demerits}</p></div></Card>
+             <Card className="border-none shadow-sm bg-white p-6 flex flex-row items-center gap-4"><div className="p-4 bg-blue-50 text-blue-600 rounded-2xl font-black text-xs">Matrícula</div><div><p className="text-2xl font-black">{stats.totalStudents}</p></div></Card>
+             <Card className="border-none shadow-sm bg-white p-6 flex flex-row items-center gap-4"><div className="p-4 bg-red-50 text-red-600 rounded-2xl font-black text-xs">Deméritos Anual</div><div><p className="text-2xl font-black">{stats.demerits}</p></div></Card>
           </div>
-          <Card className="bg-white border-none shadow-sm overflow-hidden"><CardBody className="p-0 text-slate-900"><table className="w-full text-xs text-left"><thead className="bg-gray-50 font-bold text-gray-400 uppercase text-xs"><tr><th className="p-4">Mes</th><th className="p-4 text-center">Faltas</th><th className="p-4 text-center">Redenciones</th></tr></thead><tbody>{monthlyData.filter(m => m.monthIndex >= parseInt(startMonth) && m.monthIndex <= parseInt(endMonth)).map((m, i) => (<tr key={i} className="border-b border-gray-50"><td className="p-4 font-bold uppercase">{months[m.monthIndex-1].label}</td><td className="p-4 text-center text-red-600 font-bold">{m.demTotal}</td><td className="p-4 text-center text-emerald-600 font-bold">{m.redTotal}</td></tr>))}</tbody></table></CardBody></Card>
+          <Card className="bg-white border-none shadow-sm overflow-hidden"><CardBody className="p-0 text-slate-900"><table className="w-full text-xs text-left"><thead className="bg-gray-50 font-bold text-gray-400 text-xs"><tr><th className="p-4">Mes</th><th className="p-4 text-center">Faltas</th><th className="p-4 text-center">Redenciones</th></tr></thead><tbody>{monthlyData.filter(m => m.monthIndex >= parseInt(startMonth) && m.monthIndex <= parseInt(endMonth)).map((m, i) => (<tr key={i} className="border-b border-gray-50"><td className="p-4 font-bold">{months[m.monthIndex-1].label}</td><td className="p-4 text-center text-red-600 font-bold">{m.demTotal}</td><td className="p-4 text-center text-emerald-600 font-bold">{m.redTotal}</td></tr>))}</tbody></table></CardBody></Card>
         </div>
       )}
 

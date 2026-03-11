@@ -12,15 +12,15 @@ export function Footer() {
       </div>
       
       <div className="flex flex-col items-center gap-1">
-        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
+        <p className="text-xs font-black tracking-[0.2em] text-slate-400 dark:text-slate-500">
           © {currentYear} Sistema de Gestión de Deméritos
         </p>
-        <p className="text-[9px] font-bold uppercase tracking-widest text-slate-400/80 dark:text-slate-500/80 flex items-center gap-1">
+        <p className="text-xs font-bold tracking-widest text-slate-400/80 dark:text-slate-500/80 flex items-center gap-1">
           Desarrollado por 
           <Link 
             href="https://momotolabs.com" 
             target="_blank" 
-            className="text-[9px] font-black text-[#1e3b8a] dark:text-blue-400 hover:underline underline-offset-4"
+            className="text-xs font-black text-[#1e3b8a] dark:text-blue-400 hover:underline underline-offset-4"
           >
             MOMOTOLABS
           </Link>
