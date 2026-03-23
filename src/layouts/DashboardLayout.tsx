@@ -29,9 +29,20 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
   const { scale, increase, decrease } = useFontSize();
 
   const fetchSessionData = async () => {
+    if (!navigator.onLine) {
+      // Offline: validar solo contra localStorage usando getSession()
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        localStorage.clear();
+        navigate('/login');
+      }
+      // Si hay sesión cacheada, no hacemos nada más — los datos ya están en estado inicial
+      return;
+    }
+
     try {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
+
       // Si hay error de auth o no hay usuario, mandamos al login de inmediato
       if (userError || !user) {
         localStorage.clear();
@@ -47,16 +58,19 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
           localStorage.setItem('cached_user', JSON.stringify(userObj));
         }
       }
-      
+
       const { data: config } = await supabase.from('configuracion_sistema').select('nombre_escuela, logo_url').single();
       if (config) {
         const configObj = { name: config.nombre_escuela, logo: config.logo_url };
         setSchoolConfig(configObj);
         localStorage.setItem('cached_config', JSON.stringify(configObj));
       }
-    } catch (error) { 
+    } catch (error) {
       console.error("Error de sesión:", error);
-      navigate('/login');
+      // Solo redirigir al login si hay red — un error offline no significa sesión inválida
+      if (navigator.onLine) {
+        navigate('/login');
+      }
     }
   };
 
@@ -65,7 +79,10 @@ export default function DashboardLayout({ children, role }: DashboardLayoutProps
 
     // Escuchador de eventos de autenticación (Cierre de sesión, Token expirado, etc)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_OUT' || !session) {
+      // Solo redirigir al login si el cierre de sesión ocurre con conexión activa.
+      // Offline, el evento TOKEN_REFRESHED falla y puede disparar !session sin que el
+      // usuario haya cerrado sesión intencionalmente.
+      if ((event === 'SIGNED_OUT' || !session) && navigator.onLine) {
         localStorage.clear();
         navigate('/login');
       }
