@@ -487,8 +487,6 @@ describe('TeacherDashboard', () => {
       // This covers lines 170 and 173: events?.filter(...).length || 0 when events has data
       // The `|| 0` truthy branch fires when filter returns length > 0
       const students = makeStudents();
-      const studentIds = students.map(s => s.id); // ['s1', 's2']
-
       mockSupabaseFrom.mockImplementation((table: string) => {
         if (table === 'perfiles') {
           const single = vi.fn().mockResolvedValue({ data: { teacher_id: 'teacher-1', full_name: 'Docente Test' }, error: null });

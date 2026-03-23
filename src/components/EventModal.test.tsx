@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, act, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
 
@@ -16,7 +16,7 @@ const {
   const mockSupabaseInsert = vi.fn();
   const mockSupabaseUpdate = vi.fn();
 
-  const mockSupabaseFrom = vi.fn((table: string) => ({
+  const mockSupabaseFrom = vi.fn((_table: string) => ({
     select: vi.fn().mockReturnThis(),
     eq: vi.fn().mockReturnThis(),
     insert: mockSupabaseInsert,
@@ -111,7 +111,7 @@ vi.mock('@heroui/react', () => ({
       {children}
     </div>
   ),
-  Tab: ({ title, tabKey }: { title: ReactNode; tabKey?: string }) => <div>{title}</div>,
+  Tab: ({ title }: { title: ReactNode; tabKey?: string }) => <div>{title}</div>,
   Textarea: ({
     value,
     onValueChange,
@@ -133,7 +133,7 @@ vi.mock('@heroui/react', () => ({
   Spinner: () => <div data-testid="spinner" />,
   Select: ({
     children,
-    label,
+    label: _label,
     onSelectionChange,
     selectedKeys,
   }: {
@@ -415,7 +415,7 @@ describe('EventModal', () => {
       const insertFn = vi.fn().mockResolvedValue({ error: null });
       mockSupabaseFrom.mockImplementation((table: string) => {
         if (table === 'demeritos_catalogo') {
-          return { select: vi.fn().mockResolvedValue({ data: CATALOG_ITEMS, error: null }) };
+          return { select: vi.fn().mockResolvedValue({ data: CATALOG_ITEMS, error: null }), eq: vi.fn(), insert: vi.fn(), update: vi.fn() };
         }
         return {
           select: vi.fn().mockReturnThis(),
@@ -459,7 +459,7 @@ describe('EventModal', () => {
       const insertFn = vi.fn().mockResolvedValue({ error: null });
       mockSupabaseFrom.mockImplementation((table: string) => {
         if (table === 'demeritos_catalogo') {
-          return { select: vi.fn().mockResolvedValue({ data: CATALOG_ITEMS, error: null }) };
+          return { select: vi.fn().mockResolvedValue({ data: CATALOG_ITEMS, error: null }), eq: vi.fn(), insert: vi.fn(), update: vi.fn() };
         }
         return {
           select: vi.fn().mockReturnThis(),
@@ -482,7 +482,7 @@ describe('EventModal', () => {
       const confirmar = buttons.find(b => b.textContent === 'Confirmar');
       // Without studentId, confirm button may still be clickable (selectedItem is set),
       // but handleSubmit will return early at line 92
-      if (confirmar && !confirmar.disabled) {
+      if (confirmar && !(confirmar as HTMLButtonElement).disabled) {
         await userEvent.click(confirmar);
       }
 
@@ -505,7 +505,7 @@ describe('EventModal', () => {
       const insertFn = vi.fn().mockResolvedValue({ error: null });
       mockSupabaseFrom.mockImplementation((table: string) => {
         if (table === 'reconocimientos_catalogo') {
-          return { select: vi.fn().mockResolvedValue({ data: RECONOCIMIENTO_ITEMS, error: null }) };
+          return { select: vi.fn().mockResolvedValue({ data: RECONOCIMIENTO_ITEMS, error: null }), eq: vi.fn(), insert: vi.fn(), update: vi.fn() };
         }
         return {
           select: vi.fn().mockReturnThis(),
@@ -583,7 +583,7 @@ describe('EventModal', () => {
       const insertFn = vi.fn().mockResolvedValue({ error: null });
       mockSupabaseFrom.mockImplementation((table: string) => {
         if (table === 'demeritos_catalogo') {
-          return { select: vi.fn().mockResolvedValue({ data: CATALOG_ITEMS, error: null }) };
+          return { select: vi.fn().mockResolvedValue({ data: CATALOG_ITEMS, error: null }), eq: vi.fn(), insert: vi.fn(), update: vi.fn() };
         }
         return {
           select: vi.fn().mockReturnThis(),
@@ -620,7 +620,7 @@ describe('EventModal', () => {
       const insertFn = vi.fn().mockResolvedValue({ error: null });
       mockSupabaseFrom.mockImplementation((table: string) => {
         if (table === 'demeritos_catalogo') {
-          return { select: vi.fn().mockResolvedValue({ data: CATALOG_ITEMS, error: null }) };
+          return { select: vi.fn().mockResolvedValue({ data: CATALOG_ITEMS, error: null }), eq: vi.fn(), insert: vi.fn(), update: vi.fn() };
         }
         return {
           select: vi.fn().mockReturnThis(),
@@ -729,7 +729,7 @@ describe('EventModal', () => {
       const insertFn = vi.fn().mockRejectedValue(new Error('Network error'));
       mockSupabaseFrom.mockImplementation((table: string) => {
         if (table === 'demeritos_catalogo') {
-          return { select: vi.fn().mockResolvedValue({ data: CATALOG_ITEMS, error: null }) };
+          return { select: vi.fn().mockResolvedValue({ data: CATALOG_ITEMS, error: null }), eq: vi.fn(), insert: vi.fn(), update: vi.fn() };
         }
         return {
           select: vi.fn().mockReturnThis(),
@@ -765,7 +765,7 @@ describe('EventModal', () => {
       const insertFn = vi.fn().mockRejectedValue(new Error('Network error'));
       mockSupabaseFrom.mockImplementation((table: string) => {
         if (table === 'demeritos_catalogo') {
-          return { select: vi.fn().mockResolvedValue({ data: CATALOG_ITEMS, error: null }) };
+          return { select: vi.fn().mockResolvedValue({ data: CATALOG_ITEMS, error: null }), eq: vi.fn(), insert: vi.fn(), update: vi.fn() };
         }
         return {
           select: vi.fn().mockReturnThis(),
@@ -801,7 +801,7 @@ describe('EventModal', () => {
       const insertFn = vi.fn().mockResolvedValue({ data: null, error: { message: 'DB constraint error' } });
       mockSupabaseFrom.mockImplementation((table: string) => {
         if (table === 'demeritos_catalogo') {
-          return { select: vi.fn().mockResolvedValue({ data: CATALOG_ITEMS, error: null }) };
+          return { select: vi.fn().mockResolvedValue({ data: CATALOG_ITEMS, error: null }), eq: vi.fn(), insert: vi.fn(), update: vi.fn() };
         }
         return {
           select: vi.fn().mockReturnThis(),
@@ -839,7 +839,7 @@ describe('EventModal', () => {
       const insertFn = vi.fn().mockResolvedValue({ error: null });
       mockSupabaseFrom.mockImplementation((table: string) => {
         if (table === 'demeritos_catalogo') {
-          return { select: vi.fn().mockResolvedValue({ data: CATALOG_ITEMS, error: null }) };
+          return { select: vi.fn().mockResolvedValue({ data: CATALOG_ITEMS, error: null }), eq: vi.fn(), insert: vi.fn(), update: vi.fn() };
         }
         return {
           select: vi.fn().mockReturnThis(),
@@ -879,7 +879,7 @@ describe('EventModal', () => {
       const insertFn = vi.fn().mockResolvedValue({ error: null });
       mockSupabaseFrom.mockImplementation((table: string) => {
         if (table === 'demeritos_catalogo') {
-          return { select: vi.fn().mockResolvedValue({ data: CATALOG_ITEMS, error: null }) };
+          return { select: vi.fn().mockResolvedValue({ data: CATALOG_ITEMS, error: null }), eq: vi.fn(), insert: vi.fn(), update: vi.fn() };
         }
         return {
           select: vi.fn().mockReturnThis(),
@@ -946,12 +946,12 @@ describe('EventModal', () => {
 
       mockSupabaseFrom.mockImplementation((table: string) => {
         if (table === 'redenciones_catalogo') {
-          return { select: vi.fn().mockResolvedValue({ data: REDENCION_ITEMS, error: null }) };
+          return { select: vi.fn().mockResolvedValue({ data: REDENCION_ITEMS, error: null }), eq: vi.fn(), insert: vi.fn(), update: vi.fn() };
         }
         if (table === 'registros_eventos') {
-          return { select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis() };
+          return { select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), insert: vi.fn(), update: vi.fn() };
         }
-        return { select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis() };
+        return { select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), insert: vi.fn(), update: vi.fn() };
       });
 
       renderModal({ initialTab: 'redencion' });
@@ -1025,12 +1025,12 @@ describe('EventModal', () => {
 
       mockSupabaseFrom.mockImplementation((table: string) => {
         if (table === 'redenciones_catalogo') {
-          return { select: vi.fn().mockResolvedValue({ data: REDENCION_ITEMS, error: null }) };
+          return { select: vi.fn().mockResolvedValue({ data: REDENCION_ITEMS, error: null }), eq: vi.fn(), insert: vi.fn(), update: vi.fn() };
         }
         if (table === 'registros_eventos') {
-          return { select: selectFn, eq: eqFn };
+          return { select: selectFn, eq: eqFn, insert: vi.fn(), update: vi.fn() };
         }
-        return { select: vi.fn().mockReturnThis(), eq: eqFn };
+        return { select: vi.fn().mockReturnThis(), eq: eqFn, insert: vi.fn(), update: vi.fn() };
       });
 
       renderModal({ initialTab: 'redencion' });
@@ -1044,13 +1044,12 @@ describe('EventModal', () => {
       vi.stubGlobal('navigator', { onLine: true });
       setupCatalogMock(REDENCION_ITEMS);
 
-      const updateFn = vi.fn().mockReturnThis();
       const eqForUpdateFn = vi.fn().mockResolvedValue({ error: null });
       const insertFn = vi.fn().mockResolvedValue({ error: null });
 
       mockSupabaseFrom.mockImplementation((table: string) => {
         if (table === 'redenciones_catalogo') {
-          return { select: vi.fn().mockResolvedValue({ data: REDENCION_ITEMS, error: null }) };
+          return { select: vi.fn().mockResolvedValue({ data: REDENCION_ITEMS, error: null }), eq: vi.fn(), insert: vi.fn(), update: vi.fn() };
         }
         if (table === 'registros_eventos') {
           return {
@@ -1060,7 +1059,7 @@ describe('EventModal', () => {
             update: vi.fn(() => ({ eq: eqForUpdateFn })),
           };
         }
-        return { select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis() };
+        return { select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), insert: vi.fn(), update: vi.fn() };
       });
 
       renderModal({ initialTab: 'redencion', initialDemeritId: 'evt-ref-1' });
@@ -1096,7 +1095,7 @@ describe('EventModal', () => {
 
       mockSupabaseFrom.mockImplementation((table: string) => {
         if (table === 'redenciones_catalogo') {
-          return { select: vi.fn().mockResolvedValue({ data: REDENCION_ITEMS, error: null }) };
+          return { select: vi.fn().mockResolvedValue({ data: REDENCION_ITEMS, error: null }), eq: vi.fn(), insert: vi.fn(), update: vi.fn() };
         }
         if (table === 'registros_eventos') {
           // Correct chain: select().eq().eq().eq() — each eq returns this, last resolves
@@ -1116,7 +1115,7 @@ describe('EventModal', () => {
           // Make the chain thenable (acts like a promise)
           return chain;
         }
-        return { select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis() };
+        return { select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), insert: vi.fn(), update: vi.fn() };
       });
 
       renderModal({ initialTab: 'redencion', initialDemeritId: 'evt-ref-1' });
@@ -1142,7 +1141,7 @@ describe('EventModal', () => {
       // Mock que resuelve correctamente la chain completa
       mockSupabaseFrom.mockImplementation((table: string) => {
         if (table === 'redenciones_catalogo') {
-          return { select: vi.fn().mockResolvedValue({ data: REDENCION_ITEMS, error: null }) };
+          return { select: vi.fn().mockResolvedValue({ data: REDENCION_ITEMS, error: null }), eq: vi.fn(), insert: vi.fn(), update: vi.fn() };
         }
         if (table === 'registros_eventos') {
           // Build a proper thenable chain
@@ -1158,7 +1157,7 @@ describe('EventModal', () => {
           });
           return createChain();
         }
-        return { select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis() };
+        return { select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), insert: vi.fn(), update: vi.fn() };
       });
 
       renderModal({ initialTab: 'redencion', initialDemeritId: 'demo-id-1' });
@@ -1184,7 +1183,7 @@ describe('EventModal', () => {
       // then the whole expression resolves via .then() (Promise-like)
       mockSupabaseFrom.mockImplementation((table: string) => {
         if (table === 'redenciones_catalogo') {
-          return { select: vi.fn().mockResolvedValue({ data: REDENCION_ITEMS, error: null }) };
+          return { select: vi.fn().mockResolvedValue({ data: REDENCION_ITEMS, error: null }), eq: vi.fn(), insert: vi.fn(), update: vi.fn() };
         }
         if (table === 'registros_eventos') {
           const resolvedValue = { data: activeDemeritsData, error: null };
@@ -1199,7 +1198,7 @@ describe('EventModal', () => {
           });
           return createChain();
         }
-        return { select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis() };
+        return { select: vi.fn().mockReturnThis(), eq: vi.fn().mockReturnThis(), insert: vi.fn(), update: vi.fn() };
       });
 
       // Sin initialDemeritId — debe mostrar Select con items
@@ -1236,11 +1235,13 @@ describe('EventModal', () => {
 
       mockSupabaseFrom.mockImplementation((table: string) => {
         if (table === 'redenciones_catalogo') {
-          return { select: vi.fn().mockResolvedValue({ data: REDENCION_ITEMS, error: null }) };
+          return { select: vi.fn().mockResolvedValue({ data: REDENCION_ITEMS, error: null }), eq: vi.fn(), insert: vi.fn(), update: vi.fn() };
         }
         return {
           select: vi.fn().mockReturnThis(),
           eq: vi.fn().mockReturnThis(),
+          insert: vi.fn(),
+          update: vi.fn(),
         };
       });
 

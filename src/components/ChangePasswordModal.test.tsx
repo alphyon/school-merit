@@ -112,12 +112,6 @@ function renderModal({ targetUserId }: RenderModalOptions = {}) {
   return { onOpenChange };
 }
 
-async function fillPasswords(newPassword: string, confirmPassword: string) {
-  const user = userEvent.setup();
-  await user.type(screen.getByLabelText('Nueva Contraseña'), newPassword);
-  await user.type(screen.getByLabelText('Confirmar Contraseña'), confirmPassword);
-  return user;
-}
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
@@ -199,14 +193,15 @@ describe('ChangePasswordModal – self password change (sin targetUserId)', () =
     let capturedCallback: (() => void) | null = null;
     let capturedDelay: number | null = null;
     const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout').mockImplementation(
-      (fn: TimerHandler, delay?: number) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ((fn: TimerHandler, delay?: number) => {
         if (typeof fn === 'function' && delay === 1500) {
           capturedCallback = fn as () => void;
           capturedDelay = delay;
           return 0 as unknown as ReturnType<typeof setTimeout>;
         }
         return originalSetTimeout(fn as TimerHandler, delay);
-      },
+      }) as typeof globalThis.setTimeout,
     );
 
     mockUpdateUser.mockResolvedValue({ error: null });
@@ -378,13 +373,7 @@ describe('ChangePasswordModal – UI states', () => {
     const passwordInput = screen.getByLabelText('Nueva Contraseña');
     expect(passwordInput).toHaveAttribute('type', 'password');
 
-    // El eye button no tiene texto, buscamos por el button dentro del endContent
-    // El Input mockeado renderiza endContent directamente — buscamos el button
-    const toggleButton = screen
-      .getAllByRole('button')
-      .find((btn) => btn.querySelector('svg') !== null || btn.className.includes('focus:outline-none'));
-
-    // Si no lo encontramos por clase, buscamos el button que NO es Cancelar ni Actualizar
+    // El eye button no tiene texto — buscamos el button que NO es Cancelar ni Actualizar
     const allButtons = screen.getAllByRole('button');
     // Los botones conocidos son: Cancelar, Actualizar Clave + el toggle
     const knownLabels = ['Cancelar', 'Actualizar Clave'];
