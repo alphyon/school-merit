@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase, supabaseAdmin } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 import DashboardLayout from '../layouts/DashboardLayout';
 import { Notification } from '../components/Notification';
 import ChangePasswordModal from '../components/ChangePasswordModal';
@@ -84,25 +84,17 @@ export default function ManageTeachers() {
         if (uError) throw uError;
         await supabase.from('docentes_grupos').delete().eq('docente_id', teacherId);
       } else {
-        const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-          email: newTeacher.email.toLowerCase(),
-          password: newTeacher.password,
-          email_confirm: true
+        const { data: fnData, error: fnError } = await supabase.functions.invoke('create-teacher', {
+          body: {
+            nombre: newTeacher.nombre,
+            email: newTeacher.email,
+            password: newTeacher.password,
+            group_ids: newTeacher.group_ids
+          }
         });
-        if (authError) throw authError;
-
-        const { data: tData, error: tError } = await supabase.from('docentes').insert(payload).select().single();
-        if (tError) throw tError;
-        teacherId = tData.id;
-
-        const { error: pError } = await supabase.from('perfiles').insert([{
-          id: authData.user!.id,
-          username: newTeacher.email.toLowerCase().split('@')[0],
-          full_name: newTeacher.nombre.toUpperCase(),
-          role: 'docente',
-          teacher_id: teacherId
-        }]);
-        if (pError) throw pError;
+        if (fnError) throw fnError;
+        if (fnData?.error) throw new Error(fnData.error);
+        teacherId = fnData.teacher_id;
       }
 
       if (newTeacher.group_ids.length > 0) {
@@ -121,12 +113,11 @@ export default function ManageTeachers() {
   const handleDelete = async (onClose: () => void) => {
     if (!teacherToDelete) return;
     try {
-      const { data: profile } = await supabase.from('perfiles').select('id').eq('teacher_id', teacherToDelete).single();
-      if (profile?.id) {
-        await supabaseAdmin.auth.admin.deleteUser(profile.id);
-      }
-      const { error: tError } = await supabase.from('docentes').delete().eq('id', teacherToDelete);
-      if (tError) throw tError;
+      const { data: fnData, error: fnError } = await supabase.functions.invoke('delete-teacher', {
+        body: { teacher_id: teacherToDelete }
+      });
+      if (fnError) throw fnError;
+      if (fnData?.error) throw new Error(fnData.error);
 
       setNotification({ message: "Docente y cuenta eliminados", type: 'success' });
       fetchData();

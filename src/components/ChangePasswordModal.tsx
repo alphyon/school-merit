@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, Button, Input } from "@heroui/react";
 import { Eye, EyeOff } from 'lucide-react';
-import { supabase, supabaseAdmin } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 import { Notification } from './Notification';
 
 interface ChangePasswordProps {
@@ -30,11 +30,11 @@ export default function ChangePasswordModal({ isOpen, onOpenChange, targetUserId
     setIsSubmitting(true);
     try {
       if (targetUserId) {
-        // El Administrador fuerza la clave de OTRO usando supabaseAdmin
-        const { error } = await supabaseAdmin.auth.admin.updateUserById(targetUserId, { 
-          password: newPassword 
+        const { data: fnData, error: fnError } = await supabase.functions.invoke('update-password', {
+          body: { target_user_id: targetUserId, password: newPassword }
         });
-        if (error) throw error;
+        if (fnError) throw fnError;
+        if (fnData?.error) throw new Error(fnData.error);
         setNotification({ message: "Contraseña forzada con éxito por el Admin", type: 'success' });
       } else {
         // El usuario (Docente o Admin) cambia su PROPIA clave usando el cliente normal que tiene la sesión

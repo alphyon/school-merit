@@ -4,9 +4,9 @@ import userEvent from '@testing-library/user-event';
 
 // ─── Hoisted mocks ────────────────────────────────────────────────────────────
 
-const { mockUpdateUser, mockUpdateUserById } = vi.hoisted(() => ({
+const { mockUpdateUser, mockInvoke } = vi.hoisted(() => ({
   mockUpdateUser: vi.fn(),
-  mockUpdateUserById: vi.fn(),
+  mockInvoke: vi.fn(),
 }));
 
 // ─── Module mocks ─────────────────────────────────────────────────────────────
@@ -16,12 +16,8 @@ vi.mock('../lib/supabase', () => ({
     auth: {
       updateUser: mockUpdateUser,
     },
-  },
-  supabaseAdmin: {
-    auth: {
-      admin: {
-        updateUserById: mockUpdateUserById,
-      },
+    functions: {
+      invoke: mockInvoke,
     },
   },
 }));
@@ -241,8 +237,8 @@ describe('ChangePasswordModal – force password (con targetUserId — admin)', 
     vi.clearAllMocks();
   });
 
-  it('llama supabaseAdmin.auth.admin.updateUserById() con el targetUserId', async () => {
-    mockUpdateUserById.mockResolvedValue({ error: null });
+  it('llama supabase.functions.invoke("update-password") con el targetUserId', async () => {
+    mockInvoke.mockResolvedValue({ data: {}, error: null });
     const user = userEvent.setup();
     renderModal({ targetUserId: 'admin-target-42' });
 
@@ -251,15 +247,15 @@ describe('ChangePasswordModal – force password (con targetUserId — admin)', 
     await user.click(screen.getByText('Actualizar Clave'));
 
     await waitFor(() => {
-      expect(mockUpdateUserById).toHaveBeenCalledWith('admin-target-42', {
-        password: 'forzada123',
+      expect(mockInvoke).toHaveBeenCalledWith('update-password', {
+        body: { target_user_id: 'admin-target-42', password: 'forzada123' },
       });
     });
     expect(mockUpdateUser).not.toHaveBeenCalled();
   });
 
   it('muestra "Contraseña forzada con éxito" al completar', async () => {
-    mockUpdateUserById.mockResolvedValue({ error: null });
+    mockInvoke.mockResolvedValue({ data: {}, error: null });
     const user = userEvent.setup();
     renderModal({ targetUserId: 'admin-target-42' });
 
@@ -331,7 +327,7 @@ describe('ChangePasswordModal – notification dismiss (L64)', () => {
   });
 
   it('admin: notificación de éxito aparece con targetUserId', async () => {
-    mockUpdateUserById.mockResolvedValue({ error: null });
+    mockInvoke.mockResolvedValue({ data: {}, error: null });
     const user = userEvent.setup({ delay: null });
     renderModal({ targetUserId: 'some-user-id' });
 

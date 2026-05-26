@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase, supabaseAdmin } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 import DashboardLayout from '../layouts/DashboardLayout';
 import { Notification } from '../components/Notification';
 import ChangePasswordModal from '../components/ChangePasswordModal';
@@ -59,20 +59,15 @@ export default function ManageAdmins() {
         return;
       }
 
-      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-        email: newAdmin.email.toLowerCase(),
-        password: newAdmin.password,
-        email_confirm: true
+      const { data: fnData, error: fnError } = await supabase.functions.invoke('create-admin', {
+        body: {
+          nombre: newAdmin.nombre,
+          email: newAdmin.email,
+          password: newAdmin.password
+        }
       });
-      if (authError) throw authError;
-
-      const { error: pError } = await supabase.from('perfiles').insert([{
-        id: authData.user!.id,
-        username: newAdmin.email.toLowerCase(),
-        full_name: newAdmin.nombre.toUpperCase(),
-        role: 'admin'
-      }]);
-      if (pError) throw pError;
+      if (fnError) throw fnError;
+      if (fnData?.error) throw new Error(fnData.error);
 
       setNotification({ message: "Administrador registrado con éxito", type: 'success' });
       fetchData();
@@ -86,8 +81,11 @@ export default function ManageAdmins() {
       const { data: { user } } = await supabase.auth.getUser();
       if (user?.id === adminToDelete.id) throw new Error("No puedes eliminar tu propia cuenta.");
 
-      await supabaseAdmin.auth.admin.deleteUser(adminToDelete.id);
-      await supabase.from('perfiles').delete().eq('id', adminToDelete.id);
+      const { data: fnData, error: fnError } = await supabase.functions.invoke('delete-admin', {
+        body: { user_id: adminToDelete.id }
+      });
+      if (fnError) throw fnError;
+      if (fnData?.error) throw new Error(fnData.error);
 
       setNotification({ message: "Administrador eliminado", type: 'success' });
       fetchData();
